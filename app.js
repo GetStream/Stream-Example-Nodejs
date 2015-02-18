@@ -1,4 +1,5 @@
 var bodyParser = require('body-parser'),
+	config = require('./config'),
 	express = require('express'),
 	expressLayouts = require('express-ejs-layouts');
 
@@ -11,4 +12,4 @@ app.use(expressLayouts);
 app.use(bodyParser.urlencoded({extended: true}));
 app.use(bodyParser.json());
 
-app.listen(8888);
+app.listen(config.port);
