@@ -23,6 +23,9 @@ app.use(expressSession({secret: 'keyboard cat',
 app.use(passport.initialize());
 app.use(passport.session());
 app.use('/', routes);
+app.use(express.static(__dirname + '/static'));
+app.use('/media', express.static(__dirname + '/media'));
+
 
 var db_connection = mongoose.createConnection(config.db);
 db_connection.on('error', function () {
