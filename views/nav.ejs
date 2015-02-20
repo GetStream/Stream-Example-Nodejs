@@ -1,0 +1,53 @@
+<nav class="navbar navbar-default navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-collapse">
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="/">GetStream Example</a>
+        </div>
+        <div class="collapse navbar-collapse">
+            <ul class="nav navbar-nav">
+                <li{% if location == 'trending' %} class="active"{% endif %}>
+                    <a href="{% url 'trending' %}">Trending</a>
+                </li>
+                <li{% if location == 'feed' %} class="active"{% endif %}>
+                    <a href="{% url 'feed' %}"><i class="glyphicon glyphicon-th"></i> Flat Feed</a>
+                </li>
+                <li{% if location == 'aggregated_feed' %} class="active"{% endif %}>
+                    <a href="{% url 'aggregated_feed' %}"><i class="glyphicon glyphicon-th-list"></i> Aggregated Feed</a>
+                </li>
+                <li{% if location == 'people' %} class="active"{% endif %}>
+                    <a href="{% url 'people' %}"><i class="glyphicon glyphicon-user"></i> People</a>
+                </li>
+            {% if request.user.is_authenticated %}
+                <li class="dropdown" id="notification-dropdown">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown" id="notification-toggle">
+                        <i class="glyphicon glyphicon-inbox"></i>  <span class="badge notifications-badge text-danger" id="notifications_inner" style="display:none;">0</span><b class="caret"></b>
+                    </a>
+                    <ul id="notification-container" class="dropdown-menu">
+                    </ul>
+                </li>
+                <li class="dropdown{% if location == 'profile' %} active{% endif %}">
+                    <a href="#" class="dropdown-toggle" data-toggle="dropdown">
+                        <i class="glyphicon"></i>  {{ user.username }}<b class="caret"></b>
+                    </a>
+                    <ul class="dropdown-menu">
+                        <li><a href="/profile">Log Out</a></li>
+                        <li><a href="/logout">Log Out</a></li>
+                    </ul>
+                </li>
+            {% else %}
+                <li>
+                    <a href="/auth/github">Login with GitHub</a>
+                        <i class="icon icon-github"></i> Sign in with GitHub
+                    </a>
+                </li>
+            {% endif %}
+            </ul>
+        </div>
+    </div>
+
+</nav>
