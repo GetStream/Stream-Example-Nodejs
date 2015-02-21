@@ -5,7 +5,7 @@ var express = require('express'),
 var router = express.Router();
 
 router.get('/', function(req, res){
-    res.render('index', {user: req.user});
+    res.render('trending', {location: 'trending',user: req.user, stuff: [1, 2]});
 });
 
 router.get('/account', ensureAuthenticated, function(req, res){
