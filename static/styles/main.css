@@ -4363,9 +4363,9 @@ body {
   .pin textarea {
     resize: vertical; }
 
-.pin-image {
+/*.pin-image {
   width: 100%; }
-
+*/
 .pin-image-holder {
   overflow: hidden;
   width: 100%;

@@ -20,7 +20,14 @@ module.exports = function(){
 
 
 	Pin.remove({}, function(err) { 
-		Pin.resetCount(function(){});
+		Pin.resetCount(function(){
+			Pin.create({user: 1, item: 1},
+				function(err, newArticle){
+					if (err){
+						return console.log(err);
+				}
+			});
+		});
 	});
 
 	Follow.remove({}, function(err) { 
