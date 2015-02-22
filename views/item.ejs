@@ -4,7 +4,7 @@
             <img class="pin-image" src="/media/<%= item.image_url %>">
         </div>
     </figure>
-    <form class="pin-bottom create-destroy" method="POST" action="{% url 'pin' %}">
+    <form class="pin-bottom create-destroy" method="POST" action="/pin">
         <div class="media">
         <%if (item.pinned) {%>
             <div class="pull-left">
