@@ -22,6 +22,6 @@
         <input type="hidden" name="next" value="{{ request.get_full_path }}">
     </form>
     <footer class="pin-attribution">
-        by <a href="/profile/<%= item.user.displayName %>"><%= item.user.displayName %></a>
+        by <a href="/profile/<%= item.user.username %>"><%= item.user.username %></a>
     </footer>
 </article>
