@@ -3,7 +3,7 @@ var passport = require('passport'),
     config = require('./config');
 
 passport.serializeUser(function(user, done) {
-    var sessionUser = {name: user.displayName, avatar: user._json.avatar_url, github_id: user.id}
+    var sessionUser = {username: user.username, displayName: user.displayName, avatar: user._json.avatar_url, github_id: user.id}
     done(null, sessionUser);
 });
 
