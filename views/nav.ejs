@@ -32,10 +32,10 @@
                 </li>
                 <li class="dropdown{% if location == 'profile' %} active{% endif %}">
                     <a href="#" class="dropdown-toggle" data-toggle="dropdown">
-                        <i class="glyphicon"></i>  {{ user.username }}<b class="caret"></b>
+                        <i class="glyphicon"></i>  <%= user.displayName %><b class="caret"></b>
                     </a>
                     <ul class="dropdown-menu">
-                        <li><a href="/profile">Log Out</a></li>
+                        <li><a href="/profile">My Profile</a></li>
                         <li><a href="/logout">Log Out</a></li>
                     </ul>
                 </li><%}
