@@ -10,7 +10,7 @@ autoIncrement.initialize(connection);
 var userSchema = new Schema(
 	{
 		_id: Number,
-		displayName: {type: String, required: true},
+		username: {type: String, required: true},
 		avatar_url: {type: String, required: true}
 	},
 	{

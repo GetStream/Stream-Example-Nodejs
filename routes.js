@@ -18,7 +18,7 @@ router.get('/', function(req, res){
         if (!req.isAuthenticated())
             return res.render('trending', {location: 'trending',user: req.user, stuff: popular});
 
-        User.findOne({displayName: req.user.name}).select('_id').lean().exec(function(err, user){
+        User.findOne({username: req.user.username}).select('_id').lean().exec(function(err, user){
             Pin.find({user: user._id}).select('item -_id').lean().exec(function(err, pinned_items){
                 var pinned_items_ids = _.pluck(pinned_items, 'item');
 
@@ -34,6 +34,12 @@ router.get('/', function(req, res){
     });
 });
 
+router.get('/people', ensureAuthenticated, function(req, res){
+    User.find({}).nor([{username: req.user.username}, {_id: 1}]).exec(function(err, people){
+        return res.render('people', {location: 'people', user: req.user, people: people, path: req.url, show_feed: false});
+    })
+});
+
 router.get('/account', ensureAuthenticated, function(req, res){
     res.render('account', {user: req.user});
 });
@@ -41,7 +47,8 @@ router.get('/account', ensureAuthenticated, function(req, res){
 router.get('/login', function(req, res){
     if (req.isAuthenticated())
         return res.redirect('/');
-    res.render('login', {user: req.user});
+
+    res.render('login', {location: 'people', user: req.user});
 });
 
 router.get('/auth/github', passport.authenticate('github'));
@@ -49,9 +56,9 @@ router.get('/auth/github', passport.authenticate('github'));
 router.get('/auth/github/callback', 
     passport.authenticate('github', {failureRedirect: '/login'}),
     function(req, res) {
-        User.findOne({displayName: req.user.username}, function(err, foundUser){
+        User.findOne({username: req.user.username}, function(err, foundUser){
             if (!foundUser){
-                User.create({displayName: req.user.displayName, avatar_url: req.user._json.avatar_url},
+                User.create({username: req.user.username, avatar_url: req.user._json.avatar_url},
                 function(err, newUser){
                     if (err){
                         return console.log(err);
