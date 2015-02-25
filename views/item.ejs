@@ -17,9 +17,9 @@
             </div>
         <% } %>
         </div>
-        <input name="influencer" type="hidden" value="{{ item.user_id }}">
-        <input name="item" type="hidden" value="{{ item.id }}">
-        <input type="hidden" name="next" value="{{ request.get_full_path }}">
+        <input name="influencer" type="hidden" value="<%= item.image_url %>">
+        <input name="item" type="hidden" value="<%= item._id %>">
+        <!-- <input type="hidden" name="next" value="{{ request.get_full_path }}"> -->
     </form>
     <footer class="pin-attribution">
         by <a href="/profile/<%= item.user.username %>"><%= item.user.username %></a>

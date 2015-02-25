@@ -1,4 +1,5 @@
-var express = require('express'),
+var config = require('./config/config'),
+    express = require('express'),
     passport = require('passport'),
     ensureAuthenticated = require('./config/passport'),
     models = require('./models'),
@@ -82,6 +83,65 @@ router.get('/fixtures', function(req, res){
     fixtures();
 
     res.send('fixtures ok');
+});
+
+router.post('/follow', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.user.username}, function(err, foundUser){
+        var flatFeed = client.feed('flat', foundUser._id);
+        var aggregatedFeed = client.feed('aggregated', foundUser._id);
+        var data = {user: foundUser._id, target: req.body.target};
+
+        Follow.findOne(data, function(err, foundFollow){
+            if (foundFollow){
+                flatFeed.unfollow('user', req.body.target)
+                aggregatedFeed.unfollow('user', req.body.target)
+
+                foundFollow.remove();
+            }
+            else {
+                Follow.create(data, function(err, insertedFollow){
+                    flatFeed.follow('user', req.body.target)
+                    aggregatedFeed.follow('user', req.body.target)
+                });
+            }
+
+            res.set('Content-Type', 'application/json');
+            return res.send({'pin': {'id': req.body.item}});
+        });
+    });
+});
+
+router.post('/pin', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.user.username}, function(err, foundUser){
+        var user = client.feed('user', foundUser._id);
+        var data = {user: foundUser._id, item: req.body.item};
+
+        Pin.findOne(data, function(err, foundPin){
+            if (foundPin){
+                user.removeActivity({foreignId: 'pin:' + foundPin._id});
+                foundPin.remove();
+            }
+            else {
+                Pin.create(data, function(err, insertedPin){
+                    var activity = {
+                                    'actor': 'user:' + foundUser._id,
+                                    'verb': 'pin',
+                                    'object': 'pin:' + req.body.item,
+                                    'foreign_id': 'pin:' + insertedPin._id
+                                    };
+
+                    user.addActivity(activity, function(error, response, body) {
+                        if (error){
+                            console.log(error)
+                        }
+                    });
+                });
+            }
+
+            res.set('Content-Type', 'application/json');
+            return res.send({'pin': {'id': req.body.item}});
+        })
+    });
 });
 
 module.exports = router;
