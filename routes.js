@@ -5,6 +5,9 @@ var express = require('express'),
     fixtures = require('./fixtures'),
     _ = require('underscore');
 
+var stream = require('getstream');
+var client = stream.connect(config.stream_key, config.stream_secret, config.stream_app_id);
+
 var router = express.Router(),
     User = models.user,
     Item = models.item,
