@@ -38,8 +38,19 @@ router.get('/', function(req, res){
     });
 });
 
+router.get('/flat', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.user.username}, function(err, foundUser){
+        var flatFeed = client.feed('flat', foundUser._id);
+        flatFeed.get({}, function(err, response){
+            var activities = response.body.results;
+        // return res.render('feed', {location: 'feed', user: req.user, people: people, path: req.url, show_feed: false});
+        });
+
+    });
+});
+
 router.get('/people', ensureAuthenticated, function(req, res){
-    User.find({}).nor([{username: req.user.username}, {_id: 1}]).exec(function(err, people){
+    User.find({}).nor([{username: req.user.username}, {_id: 0}]).exec(function(err, people){
         return res.render('people', {location: 'people', user: req.user, people: people, path: req.url, show_feed: false});
     })
 });
@@ -67,9 +78,11 @@ router.get('/auth/github/callback',
                     if (err){
                         return console.log(err);
                     }
+                    return res.redirect('/');
                 });
+                
+                return res.redirect('/');
             }
-            return res.redirect('/');
         });
     }
 );
