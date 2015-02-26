@@ -10,8 +10,14 @@ var development = {
 };
 
 var production = {
-	db: 'remotemongourl',
-	port: process.env.PORT
+	db: process.env.MONGODB_URL,
+	port: process.env.MONGODB_PORT,
+	github_clientID: process.env.GITHUB_CLIENTID,
+	github_clientSecret: process.env.GITHUB_CLIENTSECRET,
+	github_callback: process.env.GITHUB_CALLBACK,
+	stream_app_id: process.env.STREAM_ID,
+	stream_key: process.env.STREAM_KEY,
+	stream_secret: process.env.STREAM_SECRET
 };
 
 module.exports = {
