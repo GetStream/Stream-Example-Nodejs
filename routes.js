@@ -76,13 +76,14 @@ router.get('/auth/github/callback',
                 User.create({username: req.user.username, avatar_url: req.user._json.avatar_url},
                 function(err, newUser){
                     if (err){
+                        console.log('da');
                         return console.log(err);
                     }
                     return res.redirect('/');
                 });
-                
-                return res.redirect('/');
             }
+            else
+                return res.redirect('/');
         });
     }
 );
