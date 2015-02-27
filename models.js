@@ -49,7 +49,7 @@ pinSchema.statics.as_activity = function(pinData, user) {
 	                    'actor': 'user:' + pinData.user,
 	                    'verb': 'pin',
 	                    'object': 'pin:' + pinData.item,
-	                    'foreign_id': 'pin:' + insertedPin._id
+	                    'foreign_id': 'pin:' + insertedPin.foreign_id()
 	                    };
 
 	    user.addActivity(activity, function(error, response, body) {
@@ -58,6 +58,9 @@ pinSchema.statics.as_activity = function(pinData, user) {
 	        }
 		});
 	});
+}
+pinSchema.methods.foreign_id = function(){
+	return this._id;
 }
 
 var followSchema = new Schema(
