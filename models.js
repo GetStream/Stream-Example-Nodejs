@@ -43,6 +43,22 @@ var pinSchema = new Schema(
 	}
 );
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
+pinSchema.statics.as_activity = function(pinData, user) {
+    connection.model('Pin', pinSchema).create(pinData, function(err, insertedPin){
+	    var activity = {
+	                    'actor': 'user:' + pinData.user,
+	                    'verb': 'pin',
+	                    'object': 'pin:' + pinData.item,
+	                    'foreign_id': 'pin:' + insertedPin._id
+	                    };
+
+	    user.addActivity(activity, function(error, response, body) {
+	        if (error){
+	            console.log(error)
+	        }
+		});
+	});
+}
 
 var followSchema = new Schema(
 	{

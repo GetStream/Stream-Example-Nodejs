@@ -128,29 +128,16 @@ router.post('/follow', ensureAuthenticated, function(req, res){
 router.post('/pin', ensureAuthenticated, function(req, res){
     User.findOne({username: req.user.username}, function(err, foundUser){
         var user = client.feed('user', foundUser._id);
-        var data = {user: foundUser._id, item: req.body.item};
+        var pinData = {user: foundUser._id, item: req.body.item};
 
-        Pin.findOne(data, function(err, foundPin){
+        Pin.findOne(pinData, function(err, foundPin){
             if (foundPin){
                 user.removeActivity({foreignId: 'pin:' + foundPin._id});
                 foundPin.remove();
             }
             else {
-                Pin.create(data, function(err, insertedPin){
-                    var activity = {
-                                    'actor': 'user:' + foundUser._id,
-                                    'verb': 'pin',
-                                    'object': 'pin:' + req.body.item,
-                                    'foreign_id': 'pin:' + insertedPin._id
-                                    };
-
-                    user.addActivity(activity, function(error, response, body) {
-                        if (error){
-                            console.log(error)
-                        }
-                    });
-                });
-            }
+                Pin.as_activity(pinData, user);
+           }
 
             res.set('Content-Type', 'application/json');
             return res.send({'pin': {'id': req.body.item}});
