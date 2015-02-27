@@ -131,13 +131,10 @@ router.post('/pin', ensureAuthenticated, function(req, res){
         var pinData = {user: foundUser._id, item: req.body.item};
 
         Pin.findOne(pinData, function(err, foundPin){
-            if (foundPin){
-                user.removeActivity({foreignId: 'pin:' + foundPin._id});
-                foundPin.remove();
-            }
-            else {
+            if (foundPin)
+                foundPin.remove_activity(user);
+            else 
                 Pin.as_activity(pinData, user);
-           }
 
             res.set('Content-Type', 'application/json');
             return res.send({'pin': {'id': req.body.item}});

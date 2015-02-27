@@ -59,6 +59,11 @@ pinSchema.statics.as_activity = function(pinData, user) {
 		});
 	});
 }
+pinSchema.methods.remove_activity = function(user){
+    user.removeActivity({foreignId: 'pin:' + this.foreign_id()});
+    this.remove();
+}
+
 pinSchema.methods.foreign_id = function(){
 	return this._id;
 }
