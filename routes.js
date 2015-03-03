@@ -4,7 +4,8 @@ var config = require('./config/config'),
     ensureAuthenticated = require('./config/passport'),
     models = require('./models'),
     fixtures = require('./fixtures'),
-    _ = require('underscore');
+    _ = require('underscore'),
+    async = require('async');
 
 var stream = require('getstream');
 var client = stream.connect(config.stream_key, config.stream_secret, config.stream_app_id);
@@ -12,8 +13,28 @@ var client = stream.connect(config.stream_key, config.stream_secret, config.stre
 var router = express.Router(),
     User = models.user,
     Item = models.item,
-    Pin = models.pin;
+    Pin = models.pin,
+    Follow = models.follow;
 
+var did_i_pin_it = function(all_items, pinned_items){
+    var pinned_items_ids = _.pluck(pinned_items, 'item');
+
+    _.each(all_items, function(item){
+        if (pinned_items_ids.indexOf(item._id) >= 0){
+            item.pinned = true;
+        }
+    });
+};
+
+var did_i_follow = function(all_users, followed_users){
+    var followed_users_ids = _.pluck(followed_users, 'target');
+
+    _.each(all_users, function(user){
+        if (followed_users_ids.indexOf(user._id) >= 0){
+            user.followed = true
+        }
+    });
+};
 
 router.get('/', function(req, res){
     Item.find({}).populate('user').lean().exec(function(err, popular){
@@ -24,13 +45,7 @@ router.get('/', function(req, res){
 
         User.findOne({username: req.user.username}).select('_id').lean().exec(function(err, user){
             Pin.find({user: user._id}).select('item -_id').lean().exec(function(err, pinned_items){
-                var pinned_items_ids = _.pluck(pinned_items, 'item');
-
-                _.each(popular, function(item){
-                    if (pinned_items_ids.indexOf(item._id) >= 0){
-                        item.pinned = true;
-                    }
-                });
+                did_i_pin_it(popular, pinned_items);
 
                 return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
             })
@@ -38,21 +53,125 @@ router.get('/', function(req, res){
     });
 });
 
+var enrich = function(activities, callback){
+    activities = activities.reverse();
+
+    var separated = _.groupBy(activities, function(activity){
+        return (activity.verb.localeCompare('pin') == 0);
+    });
+
+    var pin_activities = separated['true'];
+    var follow_activities = separated['false'];
+
+    async.parallel({
+        enrichedPins: function(cb){
+            Pin.enrich_activities(pin_activities, cb);
+        },
+        enrichedFollows: function(cb){
+            Follow.enrich_activities(follow_activities, cb);
+        }
+    }, function(err, results){
+        if (err)
+            console.log(err);
+
+        var enrichedPins = results.enrichedPins;
+        var enrichedFollows = results.enrichedFollows;
+
+        var results = [];
+
+        var pin_index = 0;
+        var follow_index = 0;
+        for (var i = 0; i < activities.length; ++i){
+            if ((activities[i].foreign_id.split(':')[0].localeCompare('pin')) == 0 &&
+            (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedPins[pin_index].foreign_id())){
+                var pin = enrichedPins[pin_index].toJSON();
+                pin.pin = true;
+                results.push(pin);
+                ++pin_index;
+            }
+            else if (((activities[i].foreign_id.split(':')[0].localeCompare('follow')) == 0) &&
+                (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedFollows[follow_index].foreign_id())){
+                var follow = enrichedFollows[follow_index].toJSON();
+                follow.pin = false;
+                results.push(follow);
+                console.log(follow);
+                ++follow_index;
+            }
+        }
+        callback(results);
+    });
+}
+
 router.get('/flat', ensureAuthenticated, function(req, res){
     User.findOne({username: req.user.username}, function(err, foundUser){
         var flatFeed = client.feed('flat', foundUser._id);
-        flatFeed.get({}, function(err, response){
-            var activities = response.body.results;
-        // return res.render('feed', {location: 'feed', user: req.user, people: people, path: req.url, show_feed: false});
-        });
 
+        flatFeed.get({}, function(err, response, body){
+            if (err)
+                console.log(err)
+
+            var activities = response.body.results;
+            console.log(response);
+            enrich(activities, function(results){
+                console.log(activities);
+                // return res.send(results);
+                return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
+            });
+        });
     });
 });
 
 router.get('/people', ensureAuthenticated, function(req, res){
-    User.find({}).nor([{username: req.user.username}, {_id: 0}]).exec(function(err, people){
-        return res.render('people', {location: 'people', user: req.user, people: people, path: req.url, show_feed: false});
+    User.find({}).where('_id').ne(0).lean().exec(function(err, users){
+        users = _.groupBy(users, function(user){
+            return (user.username.localeCompare(req.user.username) == 0);
+        });
+
+        people = users['false'];
+        currentUser = users['true'][0];
+
+        Follow.find({user: currentUser._id}).exec(function(err, followedUsers){
+            did_i_follow(people, followedUsers);
+
+            return res.render('people', {location: 'people', user: req.user, people: people, path: req.url, show_feed: false});
+        });
     })
+});
+
+router.get('/profile', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.user.username}, function(err, foundUser){
+        var flatFeed = client.feed('user', foundUser._id);
+
+        flatFeed.get({}, function(err, response, body){
+            if (err)
+                console.log(err);
+
+            var activities = response.body.results;
+            enrich(activities, function(results){
+                return res.render('_profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
+            })
+        });
+    });
+});
+
+router.get('/profile/:user', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.params.user}, function(err, foundUser){
+        if (!foundUser)
+            return res.send('User ' + req.params.user + ' not found.')
+
+        var flatFeed = client.feed('user', foundUser._id);
+
+        flatFeed.get({}, function(err, response, body){
+            if (err)
+                console.log(err);
+
+            var activities = response.body.results;
+            enrich(activities, function(results){
+                console.log(results);
+                return res.render('_profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: results, path: req.url, show_feed: true});
+            })
+        });
+    });
 });
 
 router.get('/account', ensureAuthenticated, function(req, res){
@@ -76,7 +195,6 @@ router.get('/auth/github/callback',
                 User.create({username: req.user.username, avatar_url: req.user._json.avatar_url},
                 function(err, newUser){
                     if (err){
-                        console.log('da');
                         return console.log(err);
                     }
                     return res.redirect('/');
@@ -101,6 +219,7 @@ router.get('/fixtures', function(req, res){
 
 router.post('/follow', ensureAuthenticated, function(req, res){
     User.findOne({username: req.user.username}, function(err, foundUser){
+        var userFeed = client.feed('user', foundUser._id);
         var flatFeed = client.feed('flat', foundUser._id);
         var aggregatedFeed = client.feed('aggregated', foundUser._id);
         var data = {user: foundUser._id, target: req.body.target};
@@ -110,13 +229,13 @@ router.post('/follow', ensureAuthenticated, function(req, res){
                 flatFeed.unfollow('user', req.body.target)
                 aggregatedFeed.unfollow('user', req.body.target)
 
-                foundFollow.remove();
+                foundFollow.remove_activity(userFeed);
             }
             else {
-                Follow.create(data, function(err, insertedFollow){
-                    flatFeed.follow('user', req.body.target)
-                    aggregatedFeed.follow('user', req.body.target)
-                });
+                flatFeed.follow('user', req.body.target)
+                aggregatedFeed.follow('user', req.body.target)
+
+                Follow.as_activity(data, userFeed);
             }
 
             res.set('Content-Type', 'application/json');

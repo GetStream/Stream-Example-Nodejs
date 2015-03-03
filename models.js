@@ -1,6 +1,7 @@
 var mongoose = require('mongoose'),
 	autoIncrement = require('mongoose-auto-increment'),
-	config = require('./config/config');
+	config = require('./config/config'),
+	_ = require('underscore');
 
 var connection = mongoose.createConnection(config.db);
 var Schema = mongoose.Schema;
@@ -63,6 +64,26 @@ pinSchema.methods.remove_activity = function(user){
     user.removeActivity({foreignId: 'pin:' + this.foreign_id()});
     this.remove();
 }
+pinSchema.statics.enrich_activities = function(pin_activities, cb){
+	if (typeof pin_activities === 'undefined')
+		return cb(null, []);
+
+   	pinIds = _.map(_.pluck(pin_activities, 'foreign_id'), function(foreign_id){
+   		return parseInt(foreign_id.split(':')[1]);
+   	})
+
+	connection.model('Pin', pinSchema)
+		.find({_id: {$in: pinIds}})
+		.populate(['user', 'item'])
+		.exec(function(err, found){
+			connection.model('User', userSchema).populate(found, {path: 'item.user'} ,function(err, done){
+				if (err)
+					return console.log(err);
+				else
+					cb(err, done);
+			});
+		});
+};
 
 pinSchema.methods.foreign_id = function(){
 	return this._id;
@@ -79,6 +100,42 @@ var followSchema = new Schema(
 	}
 );
 followSchema.plugin(autoIncrement.plugin, {model: 'Follow', field: '_id'});
+followSchema.statics.enrich_activities = function(follow_activities, cb){
+	if (typeof follow_activities === 'undefined')
+		return cb(null, []);
+
+   	followIds = _.map(_.pluck(follow_activities, 'foreign_id'), function(foreign_id){
+   		return parseInt(foreign_id.split(':')[1]);
+   	});
+
+	connection.model('Follow', followSchema)
+		.find({_id: {$in: followIds}})
+		.populate(['user', 'target'])
+		.exec(cb);
+};
+followSchema.statics.as_activity = function(followData, userFeed) {
+    connection.model('Follow', followSchema).create(followData, function(err, insertedFollow){
+	    var activity = {
+	                    'actor': 'user:' + followData.user,
+	                    'verb': 'follow',
+	                    'object': 'follow:' + followData.target,
+	                    'foreign_id': 'follow:' + insertedFollow.foreign_id()
+	                    };
+
+	    userFeed.addActivity(activity, function(error, response, body) {
+	        if (error){
+	            console.log(error)
+	        }
+		});
+	});
+}
+followSchema.methods.remove_activity = function(userFeed){
+    userFeed.removeActivity({foreignId: 'follow:' + this.foreign_id()});
+    this.remove();
+}
+followSchema.methods.foreign_id = function(){
+	return this._id;
+}
 
 module.exports = {
 				 user: connection.model('User', userSchema),
