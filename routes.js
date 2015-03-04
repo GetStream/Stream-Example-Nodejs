@@ -163,6 +163,21 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res){
     });
 });
 
+router.get('/notification_feed/', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.user.username}, function(err, foundUser){
+        var notification_feed = client.feed('notification', foundUser._id);
+
+        notification_feed.get({}, function(err, response, body){
+            if (err)
+                console.log(err)
+
+            console.log(body);
+
+            res.send('ok');
+        });
+    });
+});
+
 router.get('/people', ensureAuthenticated, function(req, res){
     User.find({}).where('_id').ne(0).lean().exec(function(err, users){
         users = _.groupBy(users, function(user){
