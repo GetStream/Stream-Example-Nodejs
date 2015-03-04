@@ -82,6 +82,7 @@ var enrich = function(activities, callback){
         var pin_index = 0;
         var follow_index = 0;
         for (var i = 0; i < activities.length; ++i){
+            console.log(activities[i]);
             if ((activities[i].foreign_id.split(':')[0].localeCompare('pin')) == 0 &&
             (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedPins[pin_index].foreign_id())){
                 var pin = enrichedPins[pin_index].toJSON();
@@ -98,6 +99,31 @@ var enrich = function(activities, callback){
                 ++follow_index;
             }
         }
+        callback(err, results);
+    });
+}
+
+var enrich_aggregated_activities = function(activities, callback){
+    var enrichedActivities = [];
+    var asyncStruct = {};
+
+    _.each(activities, function(activity, index){
+        asyncStruct[index] = function(cb){
+            enrich(activity.activities, cb);
+        }
+    });
+
+    var results = [];
+    async.parallel(asyncStruct, function(err, enrichedActivities){
+        _.each(enrichedActivities, function(activitiesArray, key){
+            pin = false;
+            if (activitiesArray[0].pin)
+                pin = true;
+            
+            results.push({objs: activitiesArray, 'pin': pin});
+
+        })
+        console.log(results);
         callback(results);
     });
 }
@@ -112,10 +138,26 @@ router.get('/flat', ensureAuthenticated, function(req, res){
 
             var activities = response.body.results;
             console.log(response);
-            enrich(activities, function(results){
-                console.log(activities);
-                // return res.send(results);
+            enrich(activities, function(err, results){
                 return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
+            });
+        });
+    });
+});
+
+router.get('/aggregated_feed', ensureAuthenticated, function(req, res){
+    User.findOne({username: req.user.username}, function(err, foundUser){
+        var aggregatedFeed = client.feed('aggregated', foundUser._id);
+
+        aggregatedFeed.get({}, function(err, response, body){
+            if (err)
+                console.log(err)
+
+            var activities = response.body.results;
+            console.log(activities);
+            enrich_aggregated_activities(activities, function(results){
+                console.log(results);
+                return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: results, path: req.url});
             });
         });
     });
@@ -127,7 +169,7 @@ router.get('/people', ensureAuthenticated, function(req, res){
             return (user.username.localeCompare(req.user.username) == 0);
         });
 
-        people = users['false'];
+        people = users['false'] || [];
         currentUser = users['true'][0];
 
         Follow.find({user: currentUser._id}).exec(function(err, followedUsers){

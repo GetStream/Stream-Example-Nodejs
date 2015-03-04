@@ -1,0 +1,48 @@
+<div class="aggregation media">
+    <div class="pull-left">
+        	<img src="<%= activities_aggregated.objs[0].user.avatar_url %>" width="55px">
+    </div>
+    <div class="media-body">
+        <div class="media-heading">
+            <div class="aggregation-header">
+                <div class="aggregation-time pull-right">
+                </div>
+                <div class="aggregation-title">
+                    <span><%= activities_aggregated.objs.length %> pins</span>
+                </div>
+            </div>
+        </div>
+        <% activities_aggregated.objs.forEach(function(activity){ %>
+            <article class="pin">
+                <figure>
+                    <div class="pin-image-holder">
+                        <img class="pin-image" src="/media/<%= activity.item.image_url %>">
+                    </div>
+                    <%if (activity.message) {%>
+                        <figcaption class="pin-caption">
+                            <%= activity.message %>
+                        </figcaption>
+                    <% } %>
+                </figure>
+                <form class="pin-bottom" method="POST" action="/pin">
+                    <div class="media">
+                        <div class="pull-left">                                    
+                            <input class="btn btn-primary btn-sm" type="submit" value="Pin">
+                        </div>
+                        <div class="media-body">
+                            <div class="input-group input-group-sm">
+                                <span class="input-group-addon text-muted">in</span>
+                                <input class="form-control" name="board_name" placeholder="Board name" type="text" value="My favourite things">
+                            </div>
+                        </div>
+                    </div>
+                    <input name="influencer" type="hidden" value="<%= activity.item.image_url %>">
+                    <input name="item" type="hidden" value="<%= activity.item._id %>">
+                </form>
+                    <footer class="pin-attribution">
+                        by <a href="/profile/<%= activity.item.user.username %>"><%= activity.item.user.username %></a>
+                        </footer>
+            </article>
+        <% }) %>
+    </div>
+</div>

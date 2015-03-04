@@ -1,0 +1,31 @@
+<div class="aggregation media">
+    <div class="pull-left">
+            <img src="<%= activities_aggregated.objs[0].user.avatar_url %>" width="55px">
+    </div>
+    <div class="media-body">
+        <div class="media-heading">
+            <div class="aggregation-header">
+                <div class="aggregation-time pull-right">
+                </div>
+                <div class="aggregation-title">
+                    <span><%= activities_aggregated.objs.length %> follows</span>
+                </div>
+            </div>
+        </div>
+        <% activities_aggregated.objs.forEach(function(activity){ %>
+			<article class="pin">
+			    <figure>
+			        <div class="pin-image-holder">
+			            <img class="pin-image" src="<%= activity.target.avatar_url %>">
+			            <figcaption class="follow-caption">
+			                <%= activity.user.username %> followed <%= activity.target.username %>
+			            </figcaption>
+			        </div>
+			    </figure>
+			    <footer class="pin-attribution">
+                    by <a href="/profile/<%= activity.user.username %>"><%= activity.user.username %></a>
+                </footer>
+			</article>
+        <% }) %>
+    </div>
+</div>

@@ -4333,6 +4333,7 @@ body {
     border: 1px solid #eee; }
   .aggregation .pin-image {
     max-width: 100%;
+        z-index:-100;
     height: auto;
     width: auto; }
   .aggregation .pin-image-holder {
@@ -4386,6 +4387,7 @@ body {
   color: #555555;
   font-size: 12px;
   line-height: 17px;
+  z-index:100;
   word-wrap: break-word; }
 
 .pin-bottom {

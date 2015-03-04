@@ -1,5 +1,9 @@
 <div id="wrapper">
-    {% for aggregated_activity in activities %}
-        {% render_activity aggregated_activity %}
-    {% endfor %}
+    <% activities.forEach(function(activities_aggregated){  %>
+        <%if (activities_aggregated.pin) {%>
+            <%- include aggregated_pin.ejs %>
+        <% } else{ %>
+            <%- include aggregated_follow.ejs %>
+        <% } %>
+    <% }) %>
 </div>
