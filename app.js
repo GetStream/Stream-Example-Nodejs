@@ -4,7 +4,6 @@ var bodyParser = require('body-parser'),
 	express = require('express'),
     expressLayouts = require('express-ejs-layouts'),
 	expressSession = require('express-session'),
-	mongoose = require('mongoose'),
 	passport = require('passport'),
     routes = require('./routes');
 
@@ -19,17 +18,14 @@ app.use(bodyParser.json());
 app.use(cookieParser(secret='I like turtles'));
 app.use(expressSession({secret: 'keyboard cat',
 						resave: false,
+
 						saveUninitialized: false}));
+
 app.use(passport.initialize());
 app.use(passport.session());
+
 app.use('/', routes);
 app.use(express.static(__dirname + '/static'));
 app.use('/media', express.static(__dirname + '/media'));
-
-
-var db_connection = mongoose.createConnection(config.db);
-db_connection.on('error', function () {
-    console.log('Error! Database connection failed.');
-});
 
 app.listen(config.port);
