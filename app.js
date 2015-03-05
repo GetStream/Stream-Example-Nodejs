@@ -5,7 +5,8 @@ var bodyParser = require('body-parser'),
     expressLayouts = require('express-ejs-layouts'),
 	expressSession = require('express-session'),
 	passport = require('passport'),
-    routes = require('./routes');
+    routes = require('./routes'),
+    nconf = require('nconf');
 
 var app = express();
 
@@ -28,4 +29,4 @@ app.use('/', routes);
 app.use(express.static(__dirname + '/static'));
 app.use('/media', express.static(__dirname + '/media'));
 
-app.listen(config.port);
+app.listen(config.get('PORT'));

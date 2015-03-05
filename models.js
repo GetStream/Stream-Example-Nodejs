@@ -3,7 +3,7 @@ var mongoose = require('mongoose'),
 	config = require('./config/config'),
 	_ = require('underscore');
 
-var connection = mongoose.createConnection(config.db);
+var connection = mongoose.createConnection(config.get('MONGODB_URL'));
 var Schema = mongoose.Schema;
 
 autoIncrement.initialize(connection);

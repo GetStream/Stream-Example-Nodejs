@@ -8,7 +8,9 @@ var config = require('./config/config'),
     async = require('async');
 
 var stream = require('getstream');
-var client = stream.connect(config.stream_key, config.stream_secret, config.stream_app_id);
+var client = stream.connect(config.get('STREAM_API_KEY'),
+                            config.get('STREAM_API_SECRET'),
+                            config.get('STREAM_ID'));
 
 var router = express.Router(),
     User = models.user,

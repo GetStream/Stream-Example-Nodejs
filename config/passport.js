@@ -12,9 +12,9 @@ passport.deserializeUser(function(sessionUser, done) {
 });
 
 passport.use(new GitHubStrategy({
-        clientID: config.github_clientID,
-        clientSecret: config.github_clientSecret,
-        callbackURL: config.github_callback
+        clientID: config.get('GITHUB_CLIENT_ID'),
+        clientSecret: config.get('GITHUB_CLIENT_SECRET'),
+        callbackURL: config.get('GITHUB_CALLBACK')
     }, function(accessToken, refreshToken, profile, done) {
         // create persistent store user if not found in db
         return done(null, profile);

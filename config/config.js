@@ -1,26 +1,15 @@
-var development = {
-	db: 'mongodb://localhost/streamapp',
-	port: 8000,
-	github_clientID: 'd267d4096edf2f3b0180',
-	github_clientSecret: '5d9830f534cc7477bd857f616845977f16f28605',
-	github_callback: 'http://127.0.0.1:8000/auth/github/callback',
-	stream_app_id: '2350',
-	stream_key: 'w2dnzgtjezph',
-	stream_secret: '7zy6jrpmzdfrnv9yhjaw9ss6etsrn62hdet4vbyyprkgdqpddhjuugrywqh74war'
-};
+var nconf = require('nconf');
 
-var production = {
-	db: process.env.MONGODB_URL,
-	port: process.env.MONGODB_PORT,
-	github_clientID: process.env.GITHUB_CLIENTID,
-	github_clientSecret: process.env.GITHUB_CLIENTSECRET,
-	github_callback: process.env.GITHUB_CALLBACK,
-	stream_app_id: process.env.STREAM_ID,
-	stream_key: process.env.STREAM_KEY,
-	stream_secret: process.env.STREAM_SECRET
-};
+nconf.argv().env();
+nconf.defaults({
+    'MONGODB_URL': 'mongodb://localhost/streamapp',
+	'PORT': 8000,
+	'GITHUB_CLIENT_ID': 'd267d4096edf2f3b0180',
+	'GITHUB_CLIENT_SECRET': '5d9830f534cc7477bd857f616845977f16f28605',
+	'GITHUB_CALLBACK': 'http://127.0.0.1:8000/auth/github/callback',
+	'STREAM_ID': '2350',
+	'STREAM_API_KEY': 'w2dnzgtjezph',
+	'STREAM_API_SECRET': '7zy6jrpmzdfrnv9yhjaw9ss6etsrn62hdet4vbyyprkgdqpddhjuugrywqh74war'
+});
 
-module.exports = {
-	development: development,
-	production: production,
-}[process.env.NODE_ENV || 'development'];
+module.exports = nconf;
