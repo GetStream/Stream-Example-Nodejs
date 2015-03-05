@@ -120,7 +120,7 @@ followSchema.statics.as_activity = function(followData, userFeed) {
 	                    'verb': 'follow',
 	                    'object': 'follow:' + followData.target,
 	                    'foreign_id': 'follow:' + insertedFollow.foreign_id(),
-	                    'to': ['user:' + followData.target]
+	                    'to': ['notification:' + followData.target]
 	                    };
 
 	    userFeed.addActivity(activity, function(error, response, body) {
