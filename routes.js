@@ -43,6 +43,7 @@ router.get('/', function(req, res){
         if (!req.isAuthenticated())
             return res.render('trending', {location: 'trending',user: req.user, stuff: popular});
 
+
         User.findOne({username: req.user.username}).select('_id').lean().exec(function(err, user){
             Pin.find({user: user._id}).select('item -_id').lean().exec(function(err, pinned_items){
                 did_i_pin_it(popular, pinned_items);
@@ -123,7 +124,6 @@ var enrich_aggregated_activities = function(activities, callback){
             results.push({objs: activitiesArray, 'pin': pin});
 
         })
-        console.log(results);
         callback(results);
     });
 }
@@ -137,7 +137,6 @@ router.get('/flat', ensureAuthenticated, function(req, res){
                 console.log(err)
 
             var activities = response.body.results;
-            console.log(response);
             enrich(activities, function(err, results){
                 return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
             });
@@ -167,13 +166,19 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
     User.findOne({username: req.user.username}, function(err, foundUser){
         var notification_feed = client.feed('notification', foundUser._id);
 
-        notification_feed.get({}, function(err, response, body){
+        notification_feed.get({mark_read:true, mark_seen: true}, function(err, response, body){
+            console.log(JSON.stringify(response));
             if (err)
                 console.log(err)
 
-            console.log(body);
+            if (body.results.length == 0)
+                return res.send('');
 
-            res.send('ok');
+            else
+                enrich(body.results[0].activities, function(err, results){
+                    console.log(results);
+                    return res.render('notification_follow', {lastFollower: results[0], count: results.length, layout: false});
+                });
         });
     });
 });
