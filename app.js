@@ -19,7 +19,6 @@ app.use(bodyParser.json());
 app.use(cookieParser(secret='I like turtles'));
 app.use(expressSession({secret: 'keyboard cat',
 						resave: false,
-
 						saveUninitialized: false}));
 
 app.use(passport.initialize());

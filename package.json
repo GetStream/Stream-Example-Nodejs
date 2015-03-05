@@ -1,7 +1,7 @@
 {
   "name": "Stream",
   "version": "1.0.0",
-  "description": "",
+  "description": "Stream Framework example in node.js",
   "main": "index.js",
   "scripts": {
     "start": "nodemon app.js",
