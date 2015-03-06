@@ -43,16 +43,34 @@ var did_i_follow = function(all_users, followed_users){
     });
 };
 
+router.use(function (error, req, res, next) {
+  if (!error) {
+    next();
+  } else {
+    console.error(error.stack);
+    res.send(500);
+  }
+});
+
+
 router.use(function(req, res, next){
     if (!req.isAuthenticated())
         return next();
-    else if(!req.user.mongo_entry)
+    else if(!req.user.id)
         User.findOne({username: req.user.username}).lean().exec(function(err, user){
             if (err)
                 return next(err);
 
-            req.user.mongo_entry = user;
-            next();
+            req.user.id = user._id;
+            req.user.token = client.feed('notification', req.user.id).token;
+            req.user.APP_ID = config.get('STREAM_ID');
+            req.user.APP_KEY = config.get('STREAM_API_KEY');
+
+            client.feed('notification', req.user.id).get({limit: 0}, function(err, response, body){
+                req.user.unseen = body.unseen;
+
+                next();
+            });
         });
     else
         next();
@@ -64,13 +82,11 @@ router.get('/', function(req, res){
             return next(err);
 
         if (req.isAuthenticated()){
-            var user = req.user.mongo_entry;
-            Pin.find({user: user._id}).select('item -_id').lean().exec(function(err, pinned_items){
+            Pin.find({user: req.user.id}).select('item -_id').lean().exec(function(err, pinned_items){
                 did_i_pin_it(popular, pinned_items);
                 return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
             });
-        }
-        else
+        } else
             return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
     });
 });
@@ -94,39 +110,36 @@ var enrich = function(activities, callback){
         }
     }, function(err, results){
         if (err)
-            console.log(err);
+            return next(err);
 
-        var enrichedPins = results.enrichedPins;
-        var enrichedFollows = results.enrichedFollows;
+        var enrichedPins = results.enrichedPins,
+            enrichedFollows = results.enrichedFollows;
 
         var results = [];
 
         var pin_index = 0;
         var follow_index = 0;
         for (var i = 0; i < activities.length; ++i){
-            console.log(activities[i]);
-            if ((activities[i].foreign_id.split(':')[0].localeCompare('pin')) == 0 &&
+            if (typeof enrichedPins[pin_index] !== 'undefined' && (activities[i].foreign_id.split(':')[0].localeCompare('pin')) == 0 &&
             (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedPins[pin_index].foreign_id())){
                 var pin = enrichedPins[pin_index].toJSON();
                 pin.pin = true;
                 results.push(pin);
                 ++pin_index;
-            }
-            else if (((activities[i].foreign_id.split(':')[0].localeCompare('follow')) == 0) &&
+            } else if (enrichedFollows[follow_index] !== 'undefined' && ((activities[i].foreign_id.split(':')[0].localeCompare('follow')) == 0) &&
                 (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedFollows[follow_index].foreign_id())){
                 var follow = enrichedFollows[follow_index].toJSON();
                 follow.pin = false;
                 results.push(follow);
-                console.log(follow);
                 ++follow_index;
             }
         }
-        callback(results);
+
+        callback(null, results);
     });
 }
 
 var enrich_aggregated_activities = function(activities, callback){
-    var enrichedActivities = [];
     var asyncStruct = {};
 
     _.each(activities, function(activity, index){
@@ -138,35 +151,33 @@ var enrich_aggregated_activities = function(activities, callback){
     var results = [];
     async.parallel(asyncStruct, function(err, enrichedActivities){
         _.each(enrichedActivities, function(activitiesArray, key){
-            pin = false;
+            var pin = false;
             if (activitiesArray[0].pin)
                 pin = true;
             
             results.push({objs: activitiesArray, 'pin': pin});
+        });
 
-        })
         callback(results);
     });
 }
 
-router.get('/flat', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
-    var flatFeed = client.feed('flat', user._id);
+router.get('/flat', ensureAuthenticated, function(req, res, next){
+    var flatFeed = client.feed('flat', req.user.id);
 
     flatFeed.get({}, function(err, response, body){
         if (err)
             return next(err);
 
         var activities = response.body.results;
-        enrich(activities, function(results){
+        enrich(activities, function(err, results){
             return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
         });
     });
 });
 
-router.get('/aggregated_feed', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
-    var aggregatedFeed = client.feed('aggregated', user._id);
+router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
+    var aggregatedFeed = client.feed('aggregated', req.user.id);
 
     aggregatedFeed.get({}, function(err, response, body){
         if (err)
@@ -180,27 +191,26 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res){
 });
 
 router.get('/notification_feed/', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
-    var notification_feed = client.feed('notification', user._id);
+    var notificationFeed = client.feed('notification', req.user.id);
 
-    notification_feed.get({mark_read:true, mark_seen: true}, function(err, response, body){
+    notificationFeed.get({mark_read:true, mark_seen: true}, function(err, response, body){
         if (err)
             return next(err);
 
         if (body.results.length == 0)
             return res.send('');
-        else
-            enrich(body.results[0].activities, function(results){
+        else{
+            req.user.unseen = 0;
+            enrich(body.results[0].activities, function(err, results){
                 return res.render('notification_follow', {lastFollower: results[0], count: results.length, layout: false});
             });
+        }
     });
 });
 
 router.get('/people', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
-
-    User.find({}).nor([{'_id': 0}, {'_id': user._id}]).lean().exec(function(err, people){
-        Follow.find({user: user._id}).exec(function(err, followedUsers){
+    User.find({}).nor([{'_id': 0}, {'_id': req.user.id}]).lean().exec(function(err, people){
+        Follow.find({user: req.user.id}).exec(function(err, followedUsers){
             if (err)
                 return next(err);
 
@@ -211,16 +221,15 @@ router.get('/people', ensureAuthenticated, function(req, res){
     })
 });
 
-router.get('/profile', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
-    var flatFeed = client.feed('user', user._id);
+router.get('/profile', ensureAuthenticated, function(req, res, next){
+    var userFeed = client.feed('user', req.user.id);
 
-    flatFeed.get({}, function(err, response, body){
+    userFeed.get({}, function(err, response, body){
         if (err)
             return next(err);
 
         var activities = response.body.results;
-        enrich(activities, function(results){
+        enrich(activities, function(err, results){
             return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
         })
     });
@@ -241,7 +250,7 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
                 return next(err);
 
             var activities = response.body.results;
-            enrich(activities, function(results){
+            enrich(activities, function(err, results){
                 return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: results, path: req.url, show_feed: true});
             })
         });
@@ -271,15 +280,13 @@ router.get('/auth/github/callback',
     function(req, res) {
         User.findOne({username: req.user.username}, function(err, foundUser){
             if (!foundUser){
-                User.create({username: req.user.username, avatar_url: req.user._json.avatar_url},
-                function(err, newUser){
-                    if (err){
-                        return console.log(err);
-                    }
+                User.create({username: req.user.username, avatar_url: req.user._json.avatar_url}, function(err, newUser){
+                    if (err)
+                        return next(err);
+                    
                     return res.redirect('/');
                 });
-            }
-            else
+            } else
                 return res.redirect('/');
         });
     }
@@ -292,14 +299,13 @@ router.get('/fixtures', function(req, res){
 });
 
 router.post('/follow', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
-    var followData = {user: user._id, target: req.body.target};
+    var followData = {user: req.user.id, target: req.body.target};
 
     Follow.findOne(followData, function(err, foundFollow){
         if (!foundFollow)
             Follow.as_activity(followData);
         else
-            foundFollow.remove_activity(user._id, req.body.target);
+            foundFollow.remove_activity(req.user.id, req.body.target);
 
         res.set('Content-Type', 'application/json');
         return res.send({'pin': {'id': req.body.item}});
@@ -308,7 +314,7 @@ router.post('/follow', ensureAuthenticated, function(req, res){
 
 router.post('/pin', ensureAuthenticated, function(req, res){
     var user = req.user.mongo_entry;
-    var pinData = {user: user._id, item: req.body.item};
+    var pinData = {user: req.user.id, item: req.body.item};
 
     Pin.findOne(pinData, function(err, foundPin){
         if (!foundPin)
