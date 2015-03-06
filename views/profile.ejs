@@ -1,33 +1,31 @@
 <div id="wrapper">
     <div class="col-lg-4">
-        {% if accounts %}
-            <img width='45' height='45' title='' alt='' src='{{ accounts.github.0.extra_data.avatar_url }}'>
-        {% else %}
-            <img width='45' height='45' title='' alt='' src='data:image/jpg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wCEAAkGBwgHBgkIBwgKCgkLDRYPDQwMDScUHBAWICkiIiAoHx8mKDIsJCYxJx8nLT03MTM0MS46LCs0RDM4NzQ5OjQBCgoKBQUFDgUFDisZExkrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrKysrK//AABEIAC0ALQMBIgACEQEDEQH/xAAbAAACAgMBAAAAAAAAAAAAAAAEBQADAQYHAv/EACoQAAIBAwMCBAcBAAAAAAAAAAECAwAEEQUSMSFBIjJRYRUjYnGB0fAT/8QAFAEBAAAAAAAAAAAAAAAAAAAAAP/EABQRAQAAAAAAAAAAAAAAAAAAAAD/2gAMAwEAAhEDEQA/AOhVZDDJO+2JCx9qxBE08yRJyxxTe+kbTY4EtcAHO7Izu45oB00acjLSRqfTmq59KuYhlQJB9H6oj422B8gZ7+Kq5tZmdcRIsZ7nmgW1Kb6jaia1S7RQJNoZwO9KKBloKg3LseQnSvGtMxvSp4VRtrGjTCK8CtxINv57UdqVqt5LiNts6L5WGNw9qBHUqyeCS3fZKuGxnnNW2tjPcjdGF25xuLcUDXRj/rYMknVdxXHt/GkJGCR6VsgVNPsDg52KTk9zWt0E44prFdxXiotxI0M6eWVTjNKqlAZcx7Z7gM5lK4w7dc+EmjNMmhtllMjqgKRnB7+HrScEjg4qUBmo3xu2CqCsS8A9/vQdSpQf/9k='>
-        {% endif %}
-        <h2><a href="{% url 'profile' profile_user.username %}">{{ profile_user.username }}</a></h2>
-        {% if not hide_description %}
+            <img width='45' height='45' title='' alt='' src='<%= profile_user.avatar_url %>'>
+        <h2><a href="/profile/<%= profile_user.username %>"><%= profile_user.username %></a></h2>
             <p>Duis mollis, est non commodo luctus, nisi erat porttitor ligula, eget lacinia odio sem nec elit. Cras mattis consectetur purus sit amet fermentum. Fusce dapibus, tellus ac cursus commodo, tortor mauris condimentum nibh.</p>
-        {% endif %}
-        <form method="POST" action="{% url 'follow' %}" class="create-destroy">
-            {% csrf_token %}
-            {% if profile_user.followed %}
+    <%if (!show_feed) {%>
+        <form method="POST" action="/follow" class="create-destroy">
+            <%if (profile_user.followed) {%>
                 <input name="remove" type="hidden" value="1">
                 <input class="btn btn-default btn-danger btn-destroy" type="submit" value="Unfollow" data-toggle="Follow">
-            {% else %}
+             <% } else{ %>
                 <input class="btn btn-default btn-create" type="submit" value="Follow" data-toggle="Unfollow">
-            {% endif %}
-            <input name="target" type="hidden" value="{{ profile_user.id }}">
-            <input name="next" type="hidden" value="{{ request.path }}">
+            <% } %>
+            <input name="target" type="hidden" value="<%= profile_user._id %>">
+            <input name="next" type="hidden" value="<%= path %>">
         </form>
+    <% } else{ %>
     </div>
-    {% if show_feed %}
         <div class="col-lg-8">
             <div class="container-pins profile">
-                {% for activity in activities %}
-                    {% render_activity activity %}
-                {% endfor %}
+                <% activities.forEach(function(activity){ %>
+                    <%if (activity.pin) {%>
+                        <%- include pin.ejs %>
+                    <% } else{ %>
+                        <%- include follow.ejs %>
+                    <% } %>
+                <% }) %>
             </div>
         </div>
-    {% endif %}
+     <% } %>
 </div>

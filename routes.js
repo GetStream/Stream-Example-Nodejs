@@ -221,7 +221,7 @@ router.get('/profile', ensureAuthenticated, function(req, res){
 
         var activities = response.body.results;
         enrich(activities, function(results){
-            return res.render('_profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
+            return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
         })
     });
 });
@@ -242,7 +242,7 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
 
             var activities = response.body.results;
             enrich(activities, function(results){
-                return res.render('_profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: results, path: req.url, show_feed: true});
+                return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: results, path: req.url, show_feed: true});
             })
         });
     });
