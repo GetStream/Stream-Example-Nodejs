@@ -1,10 +1,10 @@
 var	models = require('./models'),
 	fs = require('fs');
 
-var User = models.user,
-	Item = models.item,
-	Pin = models.pin,
-	Follow = models.follow;
+var User = models.User,
+	Item = models.Item,
+	Pin = models.Pin,
+	Follow = models.Follow;
 
 module.exports = function(){
 	User.remove({}, function(err) {
