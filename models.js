@@ -1,15 +1,15 @@
 var mongoose = require('mongoose'),
 	autoIncrement = require('mongoose-auto-increment'),
 	config = require('./config/config'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	stream = require('getstream');
 
-var stream = require('getstream');
 var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
                             config.get('STREAM_ID'));
 
 var connection = mongoose.createConnection(config.get('MONGODB_URL'));
-var Schema = mongoose.Schema;
+	Schema = mongoose.Schema;
 
 autoIncrement.initialize(connection);
 
@@ -84,7 +84,7 @@ pinSchema.statics.enrich_activities = function(pin_activities, cb){
 		.exec(function(err, found){
 			connection.model('User', userSchema).populate(found, {path: 'item.user'} ,function(err, done){
 				if (err)
-					return console.log(err);
+					return next(err);
 				else
 					cb(err, done);
 			});
@@ -110,9 +110,9 @@ followSchema.statics.enrich_activities = function(follow_activities, cb){
 	if (typeof follow_activities === 'undefined')
 		return cb(null, []);
 
-   	followIds = _.map(_.pluck(follow_activities, 'foreign_id'), function(foreign_id){
-   		return parseInt(foreign_id.split(':')[1]);
-   	});
+	followIds = _.map(_.pluck(follow_activities, 'foreign_id'), function(foreign_id){
+		return parseInt(foreign_id.split(':')[1]);
+	});
 
 	connection.model('Follow', followSchema)
 		.find({_id: {$in: followIds}})
@@ -131,18 +131,19 @@ followSchema.statics.as_activity = function(followData) {
        	flatFeed.follow('user', target_id);
         aggregatedFeed.follow('user', target_id);
 
-	    var activity = {
-	                    'actor': 'user:' + followData.user,
-	                    'verb': 'follow',
-	                    'object': 'follow:' + followData.target,
-	                    'foreign_id': 'follow:' + insertedFollow.foreign_id(),
-	                    'to': ['notification:' + followData.target]
-	                    };
-	    userFeed.addActivity(activity, function(error, response, body) {
+        var activity = {
+        	'actor': 'user:' + followData.user,
+        	'verb': 'follow',
+        	'object': 'follow:' + followData.target,
+        	'foreign_id': 'follow:' + insertedFollow.foreign_id(),
+        	'to': ['notification:' + followData.target]
+        };
+
+        userFeed.addActivity(activity, function(error, response, body) {
         	if (err)
-           		return next(err);
-		});
-	});
+        		return next(err);
+        });
+    });
 };
 followSchema.methods.remove_activity = function(user_id, target_id){
     var userFeed = client.feed('user', user_id),
@@ -160,8 +161,8 @@ followSchema.methods.foreign_id = function(){
 }
 
 module.exports = {
-				 user: connection.model('User', userSchema),
-				 item: connection.model('Item', itemSchema),
-				 pin: connection.model('Pin', pinSchema),
-				 follow: connection.model('Follow', followSchema),
-				};
+	user: connection.model('User', userSchema),
+	item: connection.model('Item', itemSchema),
+	pin: connection.model('Pin', pinSchema),
+	follow: connection.model('Follow', followSchema),
+};
