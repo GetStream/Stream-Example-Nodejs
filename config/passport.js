@@ -16,7 +16,6 @@ passport.use(new GitHubStrategy({
         clientSecret: config.get('GITHUB_CLIENT_SECRET'),
         callbackURL: config.get('GITHUB_CALLBACK')
     }, function(accessToken, refreshToken, profile, done) {
-        // create persistent store user if not found in db
         return done(null, profile);
     })
 );

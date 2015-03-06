@@ -3,6 +3,11 @@ var mongoose = require('mongoose'),
 	config = require('./config/config'),
 	_ = require('underscore');
 
+var stream = require('getstream');
+var client = stream.connect(config.get('STREAM_API_KEY'),
+                            config.get('STREAM_API_SECRET'),
+                            config.get('STREAM_ID'));
+
 var connection = mongoose.createConnection(config.get('MONGODB_URL'));
 var Schema = mongoose.Schema;
 
@@ -44,26 +49,27 @@ var pinSchema = new Schema(
 	}
 );
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
+
 pinSchema.statics.as_activity = function(pinData, user) {
     connection.model('Pin', pinSchema).create(pinData, function(err, insertedPin){
+	    var userFeed = client.feed('user', pinData.user);
 	    var activity = {
 	                    'actor': 'user:' + pinData.user,
 	                    'verb': 'pin',
 	                    'object': 'pin:' + pinData.item,
 	                    'foreign_id': 'pin:' + insertedPin.foreign_id()
 	                    };
-
-	    user.addActivity(activity, function(error, response, body) {
-	        if (error){
-	            console.log(error)
-	        }
+	    userFeed.addActivity(activity, function(err){
+        	if (err)
+           		return next(err);
 		});
 	});
-}
-pinSchema.methods.remove_activity = function(user){
-    user.removeActivity({foreignId: 'pin:' + this.foreign_id()});
+};
+pinSchema.methods.remove_activity = function(user_id){
+	var userFeed = client.feed('user', user_id);
+    userFeed.removeActivity({foreignId: 'pin:' + this.foreign_id()});
     this.remove();
-}
+};
 pinSchema.statics.enrich_activities = function(pin_activities, cb){
 	if (typeof pin_activities === 'undefined')
 		return cb(null, []);
@@ -113,8 +119,18 @@ followSchema.statics.enrich_activities = function(follow_activities, cb){
 		.populate(['user', 'target'])
 		.exec(cb);
 };
-followSchema.statics.as_activity = function(followData, userFeed) {
+followSchema.statics.as_activity = function(followData) {
     connection.model('Follow', followSchema).create(followData, function(err, insertedFollow){
+		var user_id = followData.user,
+			target_id = followData.target;
+
+    	var userFeed = client.feed('user', user_id),
+    	    flatFeed = client.feed('flat', user_id),
+        	aggregatedFeed = client.feed('aggregated', user_id);
+
+       	flatFeed.follow('user', target_id);
+        aggregatedFeed.follow('user', target_id);
+
 	    var activity = {
 	                    'actor': 'user:' + followData.user,
 	                    'verb': 'follow',
@@ -122,18 +138,23 @@ followSchema.statics.as_activity = function(followData, userFeed) {
 	                    'foreign_id': 'follow:' + insertedFollow.foreign_id(),
 	                    'to': ['notification:' + followData.target]
 	                    };
-
 	    userFeed.addActivity(activity, function(error, response, body) {
-	        if (error){
-	            console.log(error)
-	        }
+        	if (err)
+           		return next(err);
 		});
 	});
-}
-followSchema.methods.remove_activity = function(userFeed){
+};
+followSchema.methods.remove_activity = function(user_id, target_id){
+    var userFeed = client.feed('user', user_id),
+    	flatFeed = client.feed('flat', user_id),
+    	aggregatedFeed = client.feed('aggregated', user_id);
+
+    flatFeed.unfollow('user', target_id);
+    aggregatedFeed.unfollow('user', target_id)
+
     userFeed.removeActivity({foreignId: 'follow:' + this.foreign_id()});
     this.remove();
-}
+};
 followSchema.methods.foreign_id = function(){
 	return this._id;
 }

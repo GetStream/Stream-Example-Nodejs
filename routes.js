@@ -1,8 +1,7 @@
 var config = require('./config/config'),
     express = require('express'),
-    passport = require('passport'),
-    ensureAuthenticated = require('./config/passport'),
     models = require('./models'),
+    passport = require('passport'),
     fixtures = require('./fixtures'),
     _ = require('underscore'),
     async = require('async');
@@ -17,6 +16,12 @@ var router = express.Router(),
     Item = models.item,
     Pin = models.pin,
     Follow = models.follow;
+
+var ensureAuthenticated = function(req, res, next){
+    if (req.isAuthenticated()) 
+        return next();
+    res.redirect('/login');
+};
 
 var did_i_pin_it = function(all_items, pinned_items){
     var pinned_items_ids = _.pluck(pinned_items, 'item');
@@ -38,21 +43,35 @@ var did_i_follow = function(all_users, followed_users){
     });
 };
 
+router.use(function(req, res, next){
+    if (!req.isAuthenticated())
+        return next();
+    else if(!req.user.mongo_entry)
+        User.findOne({username: req.user.username}).lean().exec(function(err, user){
+            if (err)
+                return next(err);
+
+            req.user.mongo_entry = user;
+            next();
+        });
+    else
+        next();
+});
+
 router.get('/', function(req, res){
     Item.find({}).populate('user').lean().exec(function(err, popular){
         if (err)
-            return console.log(err);
-        if (!req.isAuthenticated())
-            return res.render('trending', {location: 'trending',user: req.user, stuff: popular});
+            return next(err);
 
-
-        User.findOne({username: req.user.username}).select('_id').lean().exec(function(err, user){
+        if (req.isAuthenticated()){
+            var user = req.user.mongo_entry;
             Pin.find({user: user._id}).select('item -_id').lean().exec(function(err, pinned_items){
                 did_i_pin_it(popular, pinned_items);
-
                 return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
-            })
-        });
+            });
+        }
+        else
+            return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
     });
 });
 
@@ -102,7 +121,7 @@ var enrich = function(activities, callback){
                 ++follow_index;
             }
         }
-        callback(err, results);
+        callback(results);
     });
 }
 
@@ -131,70 +150,60 @@ var enrich_aggregated_activities = function(activities, callback){
 }
 
 router.get('/flat', ensureAuthenticated, function(req, res){
-    User.findOne({username: req.user.username}, function(err, foundUser){
-        var flatFeed = client.feed('flat', foundUser._id);
+    var user = req.user.mongo_entry;
+    var flatFeed = client.feed('flat', user._id);
 
-        flatFeed.get({}, function(err, response, body){
-            if (err)
-                console.log(err)
+    flatFeed.get({}, function(err, response, body){
+        if (err)
+            return next(err);
 
-            var activities = response.body.results;
-            enrich(activities, function(err, results){
-                return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
-            });
+        var activities = response.body.results;
+        enrich(activities, function(results){
+            return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
         });
     });
 });
 
 router.get('/aggregated_feed', ensureAuthenticated, function(req, res){
-    User.findOne({username: req.user.username}, function(err, foundUser){
-        var aggregatedFeed = client.feed('aggregated', foundUser._id);
+    var user = req.user.mongo_entry;
+    var aggregatedFeed = client.feed('aggregated', user._id);
 
-        aggregatedFeed.get({}, function(err, response, body){
-            if (err)
-                console.log(err)
+    aggregatedFeed.get({}, function(err, response, body){
+        if (err)
+            return next(err);
 
-            var activities = response.body.results;
-            console.log(activities);
-            enrich_aggregated_activities(activities, function(results){
-                console.log(results);
-                return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: results, path: req.url});
-            });
+        var activities = response.body.results;
+        enrich_aggregated_activities(activities, function(results){
+            return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: results, path: req.url});
         });
     });
 });
 
 router.get('/notification_feed/', ensureAuthenticated, function(req, res){
-    User.findOne({username: req.user.username}, function(err, foundUser){
-        var notification_feed = client.feed('notification', foundUser._id);
+    var user = req.user.mongo_entry;
+    var notification_feed = client.feed('notification', user._id);
 
-        notification_feed.get({mark_read:true, mark_seen: true}, function(err, response, body){
-            console.log(JSON.stringify(response));
-            if (err)
-                console.log(err)
+    notification_feed.get({mark_read:true, mark_seen: true}, function(err, response, body){
+        if (err)
+            return next(err);
 
-            if (body.results.length == 0)
-                return res.send('');
-
-            else
-                enrich(body.results[0].activities, function(err, results){
-                    console.log(results);
-                    return res.render('notification_follow', {lastFollower: results[0], count: results.length, layout: false});
-                });
-        });
+        if (body.results.length == 0)
+            return res.send('');
+        else
+            enrich(body.results[0].activities, function(results){
+                return res.render('notification_follow', {lastFollower: results[0], count: results.length, layout: false});
+            });
     });
 });
 
 router.get('/people', ensureAuthenticated, function(req, res){
-    User.find({}).where('_id').ne(0).lean().exec(function(err, users){
-        users = _.groupBy(users, function(user){
-            return (user.username.localeCompare(req.user.username) == 0);
-        });
+    var user = req.user.mongo_entry;
 
-        people = users['false'] || [];
-        currentUser = users['true'][0];
+    User.find({}).nor([{'_id': 0}, {'_id': user._id}]).lean().exec(function(err, people){
+        Follow.find({user: user._id}).exec(function(err, followedUsers){
+            if (err)
+                return next(err);
 
-        Follow.find({user: currentUser._id}).exec(function(err, followedUsers){
             did_i_follow(people, followedUsers);
 
             return res.render('people', {location: 'people', user: req.user, people: people, path: req.url, show_feed: false});
@@ -203,23 +212,25 @@ router.get('/people', ensureAuthenticated, function(req, res){
 });
 
 router.get('/profile', ensureAuthenticated, function(req, res){
-    User.findOne({username: req.user.username}, function(err, foundUser){
-        var flatFeed = client.feed('user', foundUser._id);
+    var user = req.user.mongo_entry;
+    var flatFeed = client.feed('user', user._id);
 
-        flatFeed.get({}, function(err, response, body){
-            if (err)
-                console.log(err);
+    flatFeed.get({}, function(err, response, body){
+        if (err)
+            return next(err);
 
-            var activities = response.body.results;
-            enrich(activities, function(results){
-                return res.render('_profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
-            })
-        });
+        var activities = response.body.results;
+        enrich(activities, function(results){
+            return res.render('_profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
+        })
     });
 });
 
 router.get('/profile/:user', ensureAuthenticated, function(req, res){
     User.findOne({username: req.params.user}, function(err, foundUser){
+        if (err)
+            return next(err);
+
         if (!foundUser)
             return res.send('User ' + req.params.user + ' not found.')
 
@@ -227,11 +238,10 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
 
         flatFeed.get({}, function(err, response, body){
             if (err)
-                console.log(err);
+                return next(err);
 
             var activities = response.body.results;
             enrich(activities, function(results){
-                console.log(results);
                 return res.render('_profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: results, path: req.url, show_feed: true});
             })
         });
@@ -247,6 +257,11 @@ router.get('/login', function(req, res){
         return res.redirect('/');
 
     res.render('login', {location: 'people', user: req.user});
+});
+
+router.get('/logout', function(req, res){
+    req.logout();
+    res.redirect('/');
 });
 
 router.get('/auth/github', passport.authenticate('github'));
@@ -270,11 +285,6 @@ router.get('/auth/github/callback',
     }
 );
 
-router.get('/logout', function(req, res){
-    req.logout();
-    res.redirect('/');
-});
-
 router.get('/fixtures', function(req, res){
     fixtures();
 
@@ -282,46 +292,32 @@ router.get('/fixtures', function(req, res){
 });
 
 router.post('/follow', ensureAuthenticated, function(req, res){
-    User.findOne({username: req.user.username}, function(err, foundUser){
-        var userFeed = client.feed('user', foundUser._id);
-        var flatFeed = client.feed('flat', foundUser._id);
-        var aggregatedFeed = client.feed('aggregated', foundUser._id);
-        var data = {user: foundUser._id, target: req.body.target};
+    var user = req.user.mongo_entry;
+    var data = {user: user._id, target: req.body.target};
 
-        Follow.findOne(data, function(err, foundFollow){
-            if (foundFollow){
-                flatFeed.unfollow('user', req.body.target)
-                aggregatedFeed.unfollow('user', req.body.target)
+    Follow.findOne(data, function(err, foundFollow){
+        if (!foundFollow)
+            Follow.as_activity(followData);
+        else
+            foundFollow.remove_activity(user._id, req.body.target);
 
-                foundFollow.remove_activity(userFeed);
-            }
-            else {
-                flatFeed.follow('user', req.body.target)
-                aggregatedFeed.follow('user', req.body.target)
-
-                Follow.as_activity(data, userFeed);
-            }
-
-            res.set('Content-Type', 'application/json');
-            return res.send({'pin': {'id': req.body.item}});
-        });
+        res.set('Content-Type', 'application/json');
+        return res.send({'pin': {'id': req.body.item}});
     });
 });
 
 router.post('/pin', ensureAuthenticated, function(req, res){
-    User.findOne({username: req.user.username}, function(err, foundUser){
-        var user = client.feed('user', foundUser._id);
-        var pinData = {user: foundUser._id, item: req.body.item};
+    var user = req.user.mongo_entry;
+    var pinData = {user: user._id, item: req.body.item};
 
-        Pin.findOne(pinData, function(err, foundPin){
-            if (foundPin)
-                foundPin.remove_activity(user);
-            else 
-                Pin.as_activity(pinData, user);
+    Pin.findOne(pinData, function(err, foundPin){
+        if (!foundPin)
+            Pin.as_activity(pinData);
+        else 
+            foundPin.remove_activity(user._id);
 
-            res.set('Content-Type', 'application/json');
-            return res.send({'pin': {'id': req.body.item}});
-        })
+        res.set('Content-Type', 'application/json');
+        return res.send({'pin': {'id': req.body.item}});
     });
 });
 

@@ -1,12 +1,12 @@
 var bodyParser = require('body-parser'),
-	cookieParser = require('cookie-parser'),
-	config = require('./config/config'),
-	express = require('express'),
+    cookieParser = require('cookie-parser'),
+    config = require('./config/config'),
+    express = require('express'),
     expressLayouts = require('express-ejs-layouts'),
-	expressSession = require('express-session'),
-	passport = require('passport'),
-    routes = require('./routes'),
-    nconf = require('nconf');
+    expressSession = require('express-session'),
+    passport = require('passport'),
+    passportConfig = require('./config/passport'),
+    routes = require('./routes');
 
 var app = express();
 
