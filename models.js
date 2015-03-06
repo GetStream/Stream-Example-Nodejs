@@ -24,6 +24,7 @@ var userSchema = new Schema(
 	}
 );
 userSchema.plugin(autoIncrement.plugin, {model: 'User', field: '_id'});
+var User = connection.model('User', userSchema)
 
 var itemSchema = new Schema(
 	{
@@ -37,6 +38,7 @@ var itemSchema = new Schema(
 	}
 );
 itemSchema.plugin(autoIncrement.plugin, {model: 'Item', field: '_id'});
+var Item = connection.model('Item', itemSchema);
 
 var pinSchema = new Schema(
 	{
@@ -51,7 +53,7 @@ var pinSchema = new Schema(
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
 
 pinSchema.statics.as_activity = function(pinData, user) {
-    connection.model('Pin', pinSchema).create(pinData, function(err, insertedPin){
+    Pin.create(pinData, function(err, insertedPin){
 	    var userFeed = client.feed('user', pinData.user);
 	    var activity = {
 	                    'actor': 'user:' + pinData.user,
@@ -78,22 +80,20 @@ pinSchema.statics.enrich_activities = function(pin_activities, cb){
    		return parseInt(foreign_id.split(':')[1]);
    	})
 
-	connection.model('Pin', pinSchema)
-		.find({_id: {$in: pinIds}})
-		.populate(['user', 'item'])
-		.exec(function(err, found){
-			connection.model('User', userSchema).populate(found, {path: 'item.user'} ,function(err, done){
-				if (err)
-					return next(err);
-				else
-					cb(err, done);
-			});
+	Pin.find({_id: {$in: pinIds}}).populate(['user', 'item']).exec(function(err, found){
+		User.populate(found, {path: 'item.user'}, function(err, done){
+			if (err)
+				return next(err);
+			else
+				cb(err, done);
 		});
+	});
 };
 
 pinSchema.methods.foreign_id = function(){
 	return this._id;
 }
+var Pin = connection.model('Pin', pinSchema);
 
 var followSchema = new Schema(
 	{
@@ -114,13 +114,10 @@ followSchema.statics.enrich_activities = function(follow_activities, cb){
 		return parseInt(foreign_id.split(':')[1]);
 	});
 
-	connection.model('Follow', followSchema)
-		.find({_id: {$in: followIds}})
-		.populate(['user', 'target'])
-		.exec(cb);
+	Follow.find({_id: {$in: followIds}}).populate(['user', 'target']).exec(cb);
 };
 followSchema.statics.as_activity = function(followData) {
-    connection.model('Follow', followSchema).create(followData, function(err, insertedFollow){
+    Follow.create(followData, function(err, insertedFollow){
 		var user_id = followData.user,
 			target_id = followData.target;
 
@@ -159,10 +156,11 @@ followSchema.methods.remove_activity = function(user_id, target_id){
 followSchema.methods.foreign_id = function(){
 	return this._id;
 }
+var Follow = connection.model('Follow', followSchema);
 
 module.exports = {
-	user: connection.model('User', userSchema),
-	item: connection.model('Item', itemSchema),
-	pin: connection.model('Pin', pinSchema),
-	follow: connection.model('Follow', followSchema),
+	User: User,
+	Item: Item,
+	Pin: Pin,
+	Follow: Follow
 };

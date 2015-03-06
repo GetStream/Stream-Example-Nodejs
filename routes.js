@@ -4,18 +4,18 @@ var config = require('./config/config'),
     passport = require('passport'),
     fixtures = require('./fixtures'),
     _ = require('underscore'),
-    async = require('async');
+    async = require('async'),
+    stream = require('getstream');
 
-var stream = require('getstream');
 var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
                             config.get('STREAM_ID'));
 
 var router = express.Router(),
-    User = models.user,
-    Item = models.item,
-    Pin = models.pin,
-    Follow = models.follow;
+    User = models.User,
+    Item = models.Item,
+    Pin = models.Pin,
+    Follow = models.Follow;
 
 var ensureAuthenticated = function(req, res, next){
     if (req.isAuthenticated()) 
@@ -293,9 +293,9 @@ router.get('/fixtures', function(req, res){
 
 router.post('/follow', ensureAuthenticated, function(req, res){
     var user = req.user.mongo_entry;
-    var data = {user: user._id, target: req.body.target};
+    var followData = {user: user._id, target: req.body.target};
 
-    Follow.findOne(data, function(err, foundFollow){
+    Follow.findOne(followData, function(err, foundFollow){
         if (!foundFollow)
             Follow.as_activity(followData);
         else
