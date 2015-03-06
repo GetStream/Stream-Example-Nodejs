@@ -44,14 +44,13 @@ var did_i_follow = function(all_users, followed_users){
 };
 
 router.use(function (error, req, res, next) {
-  if (!error) {
-    next();
-  } else {
-    console.error(error.stack);
-    res.send(500);
-  }
+    if (!error) {
+        next();
+    } else {
+        console.error(error.stack);
+        res.send(500);
+    }
 });
-
 
 router.use(function(req, res, next){
     if (!req.isAuthenticated())
