@@ -165,5 +165,3 @@ module.exports = {
 	Pin: Pin,
 	Follow: Follow
 };
-
-after_deploy();
