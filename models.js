@@ -150,7 +150,7 @@ followSchema.methods.remove_activity = function(user_id, target_id){
     flatFeed.unfollow('user', target_id);
     aggregatedFeed.unfollow('user', target_id)
 
-    userFeed.removeActivity({foreignId: 'follow:' + this.foreign_id()});
+    userFeed.remove_activitytivity({foreignId: 'follow:' + this.foreign_id()});
     this.remove();
 };
 followSchema.methods.foreign_id = function(){
@@ -164,3 +164,5 @@ module.exports = {
 	Pin: Pin,
 	Follow: Follow
 };
+
+var after_deploy = require('./after_deploy');
