@@ -6,9 +6,7 @@ var bodyParser = require('body-parser'),
     expressSession = require('express-session'),
     passport = require('passport'),
     passportConfig = require('./config/passport'),
-    routes = require('./routes'),
-    after_deploy = require('./after_deploy');
-
+    routes = require('./routes');
 
 var app = express();
 
@@ -31,4 +29,3 @@ app.use(express.static(__dirname + '/static'));
 app.use('/media', express.static(__dirname + '/media'));
 
 app.listen(config.get('PORT'));
-after_deploy();

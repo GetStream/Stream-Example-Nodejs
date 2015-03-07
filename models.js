@@ -2,8 +2,7 @@ var mongoose = require('mongoose'),
 	autoIncrement = require('mongoose-auto-increment'),
 	config = require('./config/config'),
 	_ = require('underscore'),
-	stream = require('getstream'),
-	after_deploy = require('./after_deploy');
+	stream = require('getstream');
 
 var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
