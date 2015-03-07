@@ -4,7 +4,7 @@ var config = require('./config/config'),
     passport = require('passport'),
     _ = require('underscore'),
     async = require('async'),
-    stream = require('getstream'),
+    stream = require('getstream');
 
 var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
