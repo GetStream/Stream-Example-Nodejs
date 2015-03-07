@@ -5,9 +5,7 @@ var config = require('./config/config'),
     _ = require('underscore'),
     async = require('async'),
     stream = require('getstream'),
-    after_deploy = require('./after_deploy');
 
-after_deploy();
 var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
                             config.get('STREAM_ID'));
