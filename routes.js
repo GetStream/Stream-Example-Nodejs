@@ -2,7 +2,6 @@ var config = require('./config/config'),
     express = require('express'),
     models = require('./models'),
     passport = require('passport'),
-    fixtures = require('./fixtures'),
     _ = require('underscore'),
     async = require('async'),
     stream = require('getstream');
@@ -290,12 +289,6 @@ router.get('/auth/github/callback',
         });
     }
 );
-
-router.get('/fixtures', function(req, res){
-    fixtures();
-
-    res.send('fixtures ok');
-});
 
 router.post('/follow', ensureAuthenticated, function(req, res){
     var followData = {user: req.user.id, target: req.body.target};
