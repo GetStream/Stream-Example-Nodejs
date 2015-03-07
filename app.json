@@ -16,6 +16,6 @@
     "stream", "mongolab", "rollbar"
   ],
   "scripts": {
-    "postdeploy": "after_deploy.js"
+    "postdeploy": "node after_deploy.js"
   }
 }
