@@ -1,0 +1,21 @@
+{
+  "name": "Stream Example App",
+  "description": "Pinterest esque example app using GetStream.io",
+  "keywords": [
+    "getstream.io",
+    "HTML5",
+    "nodejs"
+  ],
+  "website": "https://getstream.io/",
+  "repository": "https://github.com/mihaineacsu/stream_nodejs/",
+  "logo": "http://33.media.tumblr.com/avatar_be8b5eef9ae6_128.png",
+  "success_url": "/",
+  "env": {
+  },
+  "addons": [
+    "stream", "mongolab", "rollbar"
+  ],
+  "scripts": {
+    "postdeploy": "after_deploy.js"
+  }
+}

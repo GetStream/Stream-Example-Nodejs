@@ -8,7 +8,7 @@ var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
                             config.get('STREAM_ID'));
 
-var connection = mongoose.createConnection(config.get('MONGODB_URL'));
+var connection = mongoose.createConnection(config.get('MONGOLAB_URI'));
 	Schema = mongoose.Schema;
 
 autoIncrement.initialize(connection);
