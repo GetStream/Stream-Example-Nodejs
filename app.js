@@ -6,6 +6,7 @@ var bodyParser = require('body-parser'),
     expressSession = require('express-session'),
     passport = require('passport'),
     passportConfig = require('./config/passport'),
+    passport_mock = require('./passport_mock'),
     routes = require('./routes');
 
 var app = express();
@@ -21,7 +22,8 @@ app.use(expressSession({secret: 'keyboard cat',
 						resave: false,
 						saveUninitialized: false}));
 
-app.use(passport.initialize());
+app.use(passport_mock.initialize());
+// app.use(passport.initialize());
 app.use(passport.session());
 
 app.use('/', routes);

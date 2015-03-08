@@ -158,6 +158,11 @@ followSchema.methods.foreign_id = function(){
 }
 var Follow = connection.model('Follow', followSchema);
 
+User.find({}, function(err, foundUsers){
+	if (foundUsers.length == 0)
+		require('./after_deploy')();
+});
+
 module.exports = {
 	User: User,
 	Item: Item,
