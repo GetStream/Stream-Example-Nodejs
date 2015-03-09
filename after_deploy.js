@@ -1,5 +1,5 @@
 var models = require('./models'),
-    fs = require('fs').
+    fs = require('fs'),
     async = require('async');
 
 var User = models.User,
