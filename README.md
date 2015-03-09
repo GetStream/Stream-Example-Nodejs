@@ -5,10 +5,16 @@ This example Node.js app shows you how you can use [GetStream.io](https://getstr
 [![Deploy](https://www.herokucdn.com/deploy/button.png)](https://heroku.com/deploy)
 
 ### Install
-npm install
+	npm install
 
 ### Run
-npm start
+	npm start
 
-### Load up intials models
-http://localhost:8000/fixtures
+### Using GitHub to Sign/Log in
+Initially, the app starts with the authentication user mocked, if you want to sign in and out using your GitHub account, you'll need to set up a GitHub and modify **config/config.js** to use the app's client credentials.
+
+You will also need to commment out in **app.js** the middleware that doesn't mocks the authentication process:
+
+	app.use(passport.initialize());
+	// app.use(passport_mock.initialize());
+	app.use(passport.session());
