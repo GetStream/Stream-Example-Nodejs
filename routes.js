@@ -19,7 +19,6 @@ var router = express.Router(),
 
 var ensureAuthenticated = function(req, res, next){
     if (req.isAuthenticated()) {
-        console.log(req.user);
         return next();
     }
     res.redirect('/login');
@@ -68,7 +67,8 @@ router.use(function(req, res, next){
             req.user.APP_KEY = config.get('STREAM_API_KEY');
 
             client.feed('notification', req.user.id).get({limit: 0}, function(err, response, body){
-                req.user.unseen = body.unseen;
+                if (typeof body !== 'undefined')
+                    req.user.unseen = body.unseen;
 
                 next();
             });
@@ -93,46 +93,43 @@ router.get('/', function(req, res){
 });
 
 var enrich = function(activities, callback){
-    activities = activities.reverse();
-
     var separated = _.groupBy(activities, function(activity){
-        return (activity.verb.localeCompare('pin') == 0);
+        return activity.verb.split(':')[0];
     });
 
-    var pin_activities = separated['true'];
-    var follow_activities = separated['false'];
-
     async.parallel({
-        enrichedPins: function(cb){
-            Pin.enrich_activities(pin_activities, cb);
+        pins: function(cb){
+            Pin.enrich_activities(separated.pin, cb);
         },
-        enrichedFollows: function(cb){
-            Follow.enrich_activities(follow_activities, cb);
+        follows: function(cb){
+            Follow.enrich_activities(separated.follow, cb);
         }
-    }, function(err, results){
+    }, function(err, enriched){
         if (err)
             return next(err);
 
-        var enrichedPins = results.enrichedPins,
-            enrichedFollows = results.enrichedFollows;
+        var pinDict = _.groupBy(enriched.pins, function(enrichedActivity){
+            return 'pin:' + enrichedActivity.foreign_id();
+        });
 
+        var followDict = _.groupBy(enriched.follows, function(enrichedActivity){
+            return 'follow:' + enrichedActivity.foreign_id();
+        });
+
+
+        var enrichedActivities = _.extend(pinDict, followDict);
         var results = [];
 
-        var pin_index = 0;
-        var follow_index = 0;
         for (var i = 0; i < activities.length; ++i){
-            if (typeof enrichedPins[pin_index] !== 'undefined' && (activities[i].foreign_id.split(':')[0].localeCompare('pin')) == 0 &&
-            (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedPins[pin_index].foreign_id())){
-                var pin = enrichedPins[pin_index].toJSON();
-                pin.pin = true;
-                results.push(pin);
-                ++pin_index;
-            } else if (enrichedFollows[follow_index] !== 'undefined' && ((activities[i].foreign_id.split(':')[0].localeCompare('follow')) == 0) &&
-                (parseInt(activities[i].foreign_id.split(':')[1]) == enrichedFollows[follow_index].foreign_id())){
-                var follow = enrichedFollows[follow_index].toJSON();
-                follow.pin = false;
-                results.push(follow);
-                ++follow_index;
+            var activity_id = activities[i].foreign_id;
+            if (typeof enrichedActivities[activity_id] !== 'undefined'){
+                var enrichedActivity = enrichedActivities[activity_id][0].toJSON();
+                if (activity_id.split(':')[0].localeCompare('pin') == 0)
+                    enrichedActivity.pin = true;
+                else
+                    enrichedActivity.pin = false;
+
+                results.push(enrichedActivity);
             }
         }
 
@@ -308,7 +305,7 @@ router.post('/follow', ensureAuthenticated, function(req, res){
 });
 
 router.post('/pin', ensureAuthenticated, function(req, res){
-    var user = req.user.mongo_entry;
+    var user = req.user.id;
     var pinData = {user: req.user.id, item: req.body.item};
 
     Pin.findOne(pinData, function(err, foundPin){
