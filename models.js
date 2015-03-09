@@ -78,7 +78,7 @@ pinSchema.statics.enrich_activities = function(pin_activities, cb){
 
    	pinIds = _.map(_.pluck(pin_activities, 'foreign_id'), function(foreign_id){
    		return parseInt(foreign_id.split(':')[1]);
-   	})
+   	});
 
 	Pin.find({_id: {$in: pinIds}}).populate(['user', 'item']).exec(function(err, found){
 		User.populate(found, {path: 'item.user'}, function(err, done){
@@ -150,7 +150,7 @@ followSchema.methods.remove_activity = function(user_id, target_id){
     flatFeed.unfollow('user', target_id);
     aggregatedFeed.unfollow('user', target_id)
 
-    userFeed.remove_activitytivity({foreignId: 'follow:' + this.foreign_id()});
+    userFeed.removeActivity({foreignId: 'follow:' + this.foreign_id()});
     this.remove();
 };
 followSchema.methods.foreign_id = function(){
