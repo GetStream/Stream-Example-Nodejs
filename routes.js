@@ -303,7 +303,7 @@ router.post('/follow', ensureAuthenticated, function(req, res){
             foundFollow.remove_activity(req.user.id, req.body.target);
 
         res.set('Content-Type', 'application/json');
-        return res.send({'pin': {'id': req.body.item}});
+        return res.send({'follow': {'id': req.body.target}});
     });
 });
 
@@ -322,5 +322,16 @@ router.post('/pin', ensureAuthenticated, function(req, res){
     });
 });
 
+router.get('/auto_follow/', ensureAuthenticated, function(req, res){
+    var followData = {user: req.user.id, target: 2};
+
+    Follow.findOne(followData, function(err, foundFollow){
+        if (!foundFollow)
+            Follow.as_activity(followData);
+    });
+
+    res.set('Content-Type', 'application/json');
+    return res.send({'follow': {'id': 2}});
+});
 
 module.exports = router;
