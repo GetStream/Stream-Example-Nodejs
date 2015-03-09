@@ -7,7 +7,7 @@ module.exports = {
 
         User.findOne({username: 'Andrew'}, function(err, found){
             found = found.toJSON();
-            found.avatar_url = 'https://avatars.githubusercontent.com/u/639382?v=3';
+            found.avatar_url = found.avatar_url;
             found.github_id = 639382;
             found.displayName = 'Andrew';
 
