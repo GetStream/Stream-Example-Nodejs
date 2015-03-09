@@ -5,7 +5,8 @@ var config = require('./config/config'),
     _ = require('underscore'),
     async = require('async'),
     stream = require('getstream'),
-    fs = require('fs');
+    fs = require('fs'),
+    moment = require('moment');
 
 var client = stream.connect(config.get('STREAM_API_KEY'),
                             config.get('STREAM_API_SECRET'),
@@ -124,6 +125,8 @@ var enrich = function(activities, callback){
             var activity_id = activities[i].foreign_id;
             if (typeof enrichedActivities[activity_id] !== 'undefined'){
                 var enrichedActivity = enrichedActivities[activity_id][0].toJSON();
+                enrichedActivity.timesince = moment(activities[i].time).fromNow();
+
                 if (activity_id.split(':')[0].localeCompare('pin') == 0)
                     enrichedActivity.pin = true;
                 else

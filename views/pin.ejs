@@ -32,6 +32,7 @@
         <input name="item" type="hidden" value="<%= activity.item._id %>">
     </form>
     <footer class="pin-attribution">
-        by <a href="/profile/<%= activity.item.user.username %>"><%= activity.item.user.username %></a>
+        by <a href="/profile/<%= activity.user.username %>"><%= activity.user.username %></a>
+        <%= activity.timesince %>
     </footer>
 </article>
