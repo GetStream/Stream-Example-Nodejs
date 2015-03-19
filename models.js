@@ -2,18 +2,14 @@ var mongoose = require('mongoose'),
 	autoIncrement = require('mongoose-auto-increment'),
 	config = require('./config/config'),
 	_ = require('underscore'),
-	stream = require('getstream');
-
-var client = stream.connect(config.get('STREAM_API_KEY'),
-                            config.get('STREAM_API_SECRET'),
-                            config.get('STREAM_ID'));
+	stream_node = require('getstream-node');
 
 var connection = mongoose.createConnection(config.get('MONGOLAB_URI'));
-	Schema = mongoose.Schema;
 
-autoIncrement.initialize(connection);
+FeedManager = stream_node.FeedManager;
+ActivitySchema = stream_node.Activity(connection, mongoose.Schema);
 
-var userSchema = new Schema(
+var userSchema = new ActivitySchema(
 	{
 		_id: Number,
 		username: {type: String, required: true},
@@ -23,10 +19,10 @@ var userSchema = new Schema(
 		collection: 'Users'
 	}
 );
-userSchema.plugin(autoIncrement.plugin, {model: 'User', field: '_id'});
+
 var User = connection.model('User', userSchema)
 
-var itemSchema = new Schema(
+var itemSchema = new ActivitySchema(
 	{
 		_id: Number,
 		user: {type: Number, required: true, ref: 'User'},
@@ -37,10 +33,10 @@ var itemSchema = new Schema(
 		collection: 'Item'
 	}
 );
-itemSchema.plugin(autoIncrement.plugin, {model: 'Item', field: '_id'});
+
 var Item = connection.model('Item', itemSchema);
 
-var pinSchema = new Schema(
+var pinSchema = new ActivitySchema(
 	{
 		_id: Number,
 		user: {type: Number, required: true, ref: 'User'},
@@ -50,7 +46,6 @@ var pinSchema = new Schema(
 		collection: 'Pin'
 	}
 );
-pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
 
 pinSchema.statics.as_activity = function(pinData, user) {
     Pin.create(pinData, function(err, insertedPin){
@@ -90,9 +85,6 @@ pinSchema.statics.enrich_activities = function(pin_activities, cb){
 	});
 };
 
-pinSchema.methods.foreign_id = function(){
-	return this._id;
-}
 var Pin = connection.model('Pin', pinSchema);
 
 var followSchema = new Schema(
@@ -105,7 +97,7 @@ var followSchema = new Schema(
 		collection: 'Follow'
 	}
 );
-followSchema.plugin(autoIncrement.plugin, {model: 'Follow', field: '_id'});
+
 followSchema.statics.enrich_activities = function(follow_activities, cb){
 	if (typeof follow_activities === 'undefined')
 		return cb(null, []);
@@ -116,6 +108,7 @@ followSchema.statics.enrich_activities = function(follow_activities, cb){
 
 	Follow.find({_id: {$in: followIds}}).populate(['user', 'target']).exec(cb);
 };
+
 followSchema.statics.as_activity = function(followData) {
     Follow.create(followData, function(err, insertedFollow){
 		var user_id = followData.user,
@@ -142,6 +135,7 @@ followSchema.statics.as_activity = function(followData) {
         });
     });
 };
+
 followSchema.methods.remove_activity = function(user_id, target_id){
     var userFeed = client.feed('user', user_id),
     	flatFeed = client.feed('flat', user_id),
@@ -153,9 +147,7 @@ followSchema.methods.remove_activity = function(user_id, target_id){
     userFeed.removeActivity({foreignId: 'follow:' + this.foreign_id()});
     this.remove();
 };
-followSchema.methods.foreign_id = function(){
-	return this._id;
-}
+
 var Follow = connection.model('Follow', followSchema);
 
 User.find({}, function(err, foundUsers){
