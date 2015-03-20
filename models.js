@@ -5,7 +5,6 @@ var mongoose = require('mongoose'),
     stream_node = require('getstream-node');
 
 var connection = mongoose.createConnection(config.get('MONGOLAB_URI'));
-GLOBAL.FeedManager = stream_node.FeedManager;
 
 autoIncrement.initialize(connection);
 
