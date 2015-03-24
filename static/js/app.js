@@ -35,6 +35,7 @@ App.prototype = {
 			$btn.removeClass('btn-danger');
 		} else {
 			this.append('<input name="remove" type="hidden" value="1"> ');
+			this.append('<input type="hidden" name="_method" value="DELETE">');
 			$btn.addClass('btn-danger');
 		}
 	},

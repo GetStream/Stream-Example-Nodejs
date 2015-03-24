@@ -78,7 +78,7 @@ pinSchema.statics.enrich_activities = function(pin_activities, cb){
 };
 
 var Pin = connection.model('Pin', pinSchema);
-stream_node.mongoose.registerActivity(Pin);
+stream_node.Mongoose(Pin);
 
 var followSchema = new mongoose.Schema(
 	{
@@ -149,7 +149,7 @@ followSchema.methods.remove_activity = function(user_id, target_id){
 };
 
 var Follow = connection.model('Follow', followSchema);
-stream_node.mongoose.registerActivity(Follow);
+stream_node.Mongoose(Follow);
 
 User.find({}, function(err, foundUsers){
 	if (foundUsers.length == 0)

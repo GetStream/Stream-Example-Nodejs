@@ -6,6 +6,8 @@ var config = require('./config/config'),
     async = require('async'),
     stream = require('getstream'),
     fs = require('fs'),
+    bodyParser     = require('body-parser'),
+    methodOverride = require('method-override'),
     moment = require('moment');
 
 var client = stream.connect(config.get('STREAM_API_KEY'),
@@ -77,6 +79,18 @@ router.use(function(req, res, next){
     else
         next();
 });
+
+// Support DELETE from forms
+
+router.use(bodyParser.urlencoded())
+router.use(methodOverride(function(req, res){
+  if (req.body && typeof req.body === 'object' && '_method' in req.body) {
+    // look in urlencoded POST bodies and delete it
+    var method = req.body._method
+    delete req.body._method
+    return method
+  }
+}))
 
 router.get('/', function(req, res){
     Item.find({}).populate('user').lean().exec(function(err, popular){
@@ -308,17 +322,23 @@ router.post('/follow', ensureAuthenticated, function(req, res){
 });
 
 router.post('/pin', ensureAuthenticated, function(req, res){
-    var user = req.user.id;
     var pinData = {user: req.user.id, item: req.body.item};
 
-    Pin.findOne(pinData, function(err, foundPin){
-        if (!foundPin)
-            Pin.as_activity(pinData);
-        else 
-            foundPin.remove_activity(user._id);
+    Pin.as_activity(pinData);
 
-        res.set('Content-Type', 'application/json');
-        return res.send({'pin': {'id': req.body.item}});
+    res.set('Content-Type', 'application/json');
+    return res.send({'pin': {'id': req.body.item}});
+    
+});
+
+router.delete('/pin', ensureAuthenticated, function(req, res) {
+    var user = req.user.id;
+    var pinData = {user: req.user.id, item: req.body.item};
+    
+    Pin.findOne(pinData, function(err, foundPin){
+        if (foundPin) {
+            foundPin.remove();
+        }
     });
 });
 
