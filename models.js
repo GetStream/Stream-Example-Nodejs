@@ -5,6 +5,7 @@ var mongoose = require('mongoose'),
     stream_node = require('getstream-node');
 
 var connection = mongoose.createConnection(config.get('MONGOLAB_URI'));
+var FeedManager = stream_node.FeedManager;
 
 autoIncrement.initialize(connection);
 
@@ -46,39 +47,9 @@ var pinSchema = new mongoose.Schema(
 	}
 );
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
-pinSchema.statics.as_activity = function(pinData, user) {
-    record = new Pin(pinData);
-    console.log(record);
-    record.save(function(err) {
-      if (err) return console.log(err);
-    });
-    console.log(record);
-};
-pinSchema.methods.remove_activity = function(user_id){
-	var userFeed = client.feed('user', user_id);
-    userFeed.removeActivity({foreignId: 'pin:' + this.foreign_id()});
-    this.remove();
-};
-pinSchema.statics.enrich_activities = function(pin_activities, cb){
-	if (typeof pin_activities === 'undefined')
-		return cb(null, []);
-
-   	pinIds = _.map(_.pluck(pin_activities, 'foreign_id'), function(foreign_id){
-   		return parseInt(foreign_id.split(':')[1]);
-   	});
-
-	Pin.find({_id: {$in: pinIds}}).populate(['user', 'item']).exec(function(err, found){
-		User.populate(found, {path: 'item.user'}, function(err, done){
-			if (err)
-				return next(err);
-			else
-				cb(err, done);
-		});
-	});
-};
 
 var Pin = connection.model('Pin', pinSchema);
-stream_node.Mongoose(Pin);
+stream_node.mongoose.ActivityModel(Pin);
 
 var followSchema = new mongoose.Schema(
 	{
@@ -101,6 +72,17 @@ followSchema.statics.enrich_activities = function(follow_activities, cb){
 
 	Follow.find({_id: {$in: followIds}}).populate(['user', 'target']).exec(cb);
 };
+
+followSchema.pre('save', function (next) {
+  this.wasNew = this.isNew;
+  next();
+});
+
+followSchema.post('save', function (doc) {
+  if (this.wasNew) {
+  	FeedManager.followUser(doc.user, doc.target);
+  }
+});
 
 followSchema.statics.as_activity = function(followData) {
     // Follow.create(followData);
@@ -136,6 +118,12 @@ followSchema.statics.as_activity = function(followData) {
    //  });
 };
 
+followSchema.post('remove', function (doc) {
+
+  FeedManager.unfollowUser(doc.user, doc.target);
+
+});
+
 followSchema.methods.remove_activity = function(user_id, target_id){
     var userFeed = client.feed('user', user_id),
     	flatFeed = client.feed('flat', user_id),
@@ -144,12 +132,11 @@ followSchema.methods.remove_activity = function(user_id, target_id){
     flatFeed.unfollow('user', target_id);
     aggregatedFeed.unfollow('user', target_id)
 
-    userFeed.removeActivity({foreignId: 'follow:' + this.foreign_id()});
     this.remove();
 };
 
 var Follow = connection.model('Follow', followSchema);
-stream_node.Mongoose(Follow);
+stream_node.mongoose.ActivityModel(Follow);
 
 User.find({}, function(err, foundUsers){
 	if (foundUsers.length == 0)

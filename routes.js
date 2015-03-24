@@ -4,15 +4,13 @@ var config = require('./config/config'),
     passport = require('passport'),
     _ = require('underscore'),
     async = require('async'),
-    stream = require('getstream'),
+    stream_node = require('getstream-node'),
     fs = require('fs'),
     bodyParser     = require('body-parser'),
     methodOverride = require('method-override'),
     moment = require('moment');
 
-var client = stream.connect(config.get('STREAM_API_KEY'),
-                            config.get('STREAM_API_SECRET'),
-                            config.get('STREAM_ID'));
+var FeedManager = stream_node.FeedManager;
 
 var router = express.Router(),
     User = models.User,
@@ -57,30 +55,37 @@ router.use(function (error, req, res, next) {
 });
 
 router.use(function(req, res, next){
-    if (!req.isAuthenticated())
-        return next();
-    else if(!req.user.id)
+    if (!req.isAuthenticated()) {
+
+      return next();
+
+    } else if(!req.user.id) {
+
         User.findOne({username: req.user.username}).lean().exec(function(err, user){
-            if (err)
-                return next(err);
+            if (err) return next(err);
+
+            notificationFeed = FeedManager.getNotificationFeed(user._id);
 
             req.user.id = user._id;
-            req.user.token = client.feed('notification', req.user.id).token;
-            req.user.APP_ID = config.get('STREAM_ID');
-            req.user.APP_KEY = config.get('STREAM_API_KEY');
+            req.user.token = notificationFeed.token;
+            req.user.APP_ID = FeedManager.settings.apiAppId;
+            req.user.APP_KEY = FeedManager.settings.apiKey;
 
-            client.feed('notification', req.user.id).get({limit: 0}, function(err, response, body){
-                if (typeof body !== 'undefined')
-                    req.user.unseen = body.unseen;
-
+            notificationFeed.get({limit: 0}, function(err, response, body){
+                if (typeof body !== 'undefined') req.user.unseen = body.unseen;
                 next();
             });
         });
-    else
+
+    } else {
         next();
+    }
 });
 
-// Support DELETE from forms
+
+/*******************************
+    Support DELETE from forms
+*******************************/
 
 router.use(bodyParser.urlencoded())
 router.use(methodOverride(function(req, res){
@@ -177,26 +182,33 @@ var enrich_aggregated_activities = function(activities, callback){
     });
 }
 
+/******************
+  Flat Feed
+******************/
+
 router.get('/flat', ensureAuthenticated, function(req, res, next){
-    var flatFeed = client.feed('flat', req.user.id);
+    var flatFeed = FeedManager.getNewsFeeds(req.user.id)['flat'];
 
     flatFeed.get({}, function(err, response, body){
-        if (err)
-            return next(err);
+        if (err) return next(err);
 
         var activities = response.body.results;
+
         enrich(activities, function(err, results){
             return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
         });
     });
 });
 
+/******************
+  Aggregated Feed
+******************/
+
 router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
-    var aggregatedFeed = client.feed('aggregated', req.user.id);
+    var aggregatedFeed = FeedManager.getNewsFeeds(req.user.id)['aggregated'];
 
     aggregatedFeed.get({}, function(err, response, body){
-        if (err)
-            return next(err);
+        if (err) return next(err);
 
         var activities = response.body.results;
         enrich_aggregated_activities(activities, function(results){
@@ -205,16 +217,19 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
     });
 });
 
+/******************
+  Notification Feed
+******************/
+
 router.get('/notification_feed/', ensureAuthenticated, function(req, res){
-    var notificationFeed = client.feed('notification', req.user.id);
+    var notificationFeed = FeedManager.getNotificationFeed(req.user.id);
 
     notificationFeed.get({mark_read:true, mark_seen: true}, function(err, response, body){
-        if (err)
-            return next(err);
+        if (err) return next(err);
 
-        if (body.results.length == 0)
+        if (body.results.length == 0) {
             return res.send('');
-        else{
+        } else{
             req.user.unseen = 0;
             enrich(body.results[0].activities, function(err, results){
                 return res.render('notification_follow', {lastFollower: results[0], count: results.length, layout: false});
@@ -222,6 +237,10 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
         }
     });
 });
+
+/******************
+  People
+******************/
 
 router.get('/people', ensureAuthenticated, function(req, res){
     User.find({}).nor([{'_id': 0}, {'_id': req.user.id}]).lean().exec(function(err, people){
@@ -236,12 +255,15 @@ router.get('/people', ensureAuthenticated, function(req, res){
     })
 });
 
+/******************
+  User Profile
+******************/
+
 router.get('/profile', ensureAuthenticated, function(req, res, next){
-    var userFeed = client.feed('user', req.user.id);
+    var userFeed = FeedManager.getUserFeed(req.user.id);
 
     userFeed.get({}, function(err, response, body){
-        if (err)
-            return next(err);
+        if (err) return next(err);
 
         var activities = response.body.results;
         enrich(activities, function(err, results){
@@ -258,11 +280,10 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
         if (!foundUser)
             return res.send('User ' + req.params.user + ' not found.')
 
-        var flatFeed = client.feed('user', foundUser._id);
+        var flatFeed = FeedManager.getNewsFeeds(req.user.id)['flat'];
 
         flatFeed.get({}, function(err, response, body){
-            if (err)
-                return next(err);
+            if (err) return next(err);
 
             var activities = response.body.results;
             enrich(activities, function(err, results){
@@ -272,9 +293,17 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
     });
 });
 
+/******************
+  Account
+******************/
+
 router.get('/account', ensureAuthenticated, function(req, res){
     res.render('account', {user: req.user});
 });
+
+/******************
+  Auth
+******************/
 
 router.get('/login', function(req, res){
     if (req.isAuthenticated())
@@ -307,24 +336,46 @@ router.get('/auth/github/callback',
     }
 );
 
+/******************
+  Follow
+******************/
+
 router.post('/follow', ensureAuthenticated, function(req, res){
     var followData = {user: req.user.id, target: req.body.target};
 
-    Follow.findOne(followData, function(err, foundFollow){
-        if (!foundFollow)
-            Follow.as_activity(followData);
-        else
-            foundFollow.remove_activity(req.user.id, req.body.target);
-
-        res.set('Content-Type', 'application/json');
-        return res.send({'follow': {'id': req.body.target}});
+    record = new Follow(followData);
+    record.save(function(err) {
+      if (err) return console.log(err);
     });
+
+    res.set('Content-Type', 'application/json');
+    return res.send({'follow': {'id': req.body.target}});
 });
+
+router.delete('/follow', ensureAuthenticated, function(req, res) {
+    var followData = {user: req.user.id, target: req.body.target};
+
+    Follow.findOne(followData, function(err, foundFollow){
+        if (foundFollow) {
+            foundFollow.remove();
+        }
+    });
+
+    res.set('Content-Type', 'application/json');
+    return res.send({'follow': {'id': req.body.target}});
+});
+
+/******************
+  Pin
+******************/
 
 router.post('/pin', ensureAuthenticated, function(req, res){
     var pinData = {user: req.user.id, item: req.body.item};
 
-    Pin.as_activity(pinData);
+    record = new Pin(pinData);
+    record.save(function(err) {
+      if (err) return console.log(err);
+    });
 
     res.set('Content-Type', 'application/json');
     return res.send({'pin': {'id': req.body.item}});
@@ -340,14 +391,25 @@ router.delete('/pin', ensureAuthenticated, function(req, res) {
             foundPin.remove();
         }
     });
+
+    res.set('Content-Type', 'application/json');
+    return res.send({'pin': {'id': req.body.item}});
 });
+
+/******************
+  Auto Follow
+******************/
 
 router.get('/auto_follow/', ensureAuthenticated, function(req, res){
     var followData = {user: req.user.id, target: 2};
 
     Follow.findOne(followData, function(err, foundFollow){
-        if (!foundFollow)
-            Follow.as_activity(followData);
+        if (!foundFollow) {
+            record = new Follow(followData);
+            record.save(function(err) {
+              if (err) return console.log(err);
+            });
+        }
     });
 
     res.set('Content-Type', 'application/json');
