@@ -6,6 +6,8 @@ module.exports = {
         var passport = this;
 
         User.findOne({username: 'Andrew'}, function(err, found){
+            if (err) console.log(err);
+
             found = found.toJSON();
             found.avatar_url = found.avatar_url;
             found.github_id = 639382;
