@@ -19,8 +19,11 @@ var userSchema = new mongoose.Schema(
 		collection: 'Users'
 	}
 );
+stream_node.mongoose.activitySchema(userSchema);
 userSchema.plugin(autoIncrement.plugin, {model: 'User', field: '_id'});
-var User = connection.model('User', userSchema)
+
+var User = connection.model('User', userSchema);
+stream_node.FeedManager.registerActivityClass(User);
 
 var itemSchema = new mongoose.Schema(
 	{
@@ -39,14 +42,24 @@ var Item = connection.model('Item', itemSchema);
 var pinSchema = new mongoose.Schema(
 	{
     _id: Number,
-		user: {type: Number, required: true, ref: 'User'},
+		actor: {type: Number, required: true, ref: 'User'},
 		item: {type: Number, required: true, ref: 'Item'},
 	},
 	{
 		collection: 'Pin'
 	}
 );
+
 stream_node.mongoose.activitySchema(pinSchema);
+
+pinSchema.statics.pathsToPopulate = function(){
+  return 'actor item';
+};
+
+pinSchema.methods.activityActorProp = function(){
+  return 'actor';
+}
+
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
 
 var Pin = connection.model('Pin', pinSchema);
@@ -55,25 +68,25 @@ stream_node.mongoose.activityModel(Pin);
 var followSchema = new mongoose.Schema(
 	{
     _id: Number,
-		user: {type: Number, required: true, ref: 'User'},
+		actor: {type: Number, required: true, ref: 'User'},
 		target: {type: Number, required: true, ref: 'User'},
 	},
 	{
 		collection: 'Follow'
 	}
 );
+
 stream_node.mongoose.activitySchema(followSchema);
-followSchema.plugin(autoIncrement.plugin, {model: 'Follow', field: '_id'});
-followSchema.statics.enrich_activities = function(follow_activities, cb){
-	if (typeof follow_activities === 'undefined')
-		return cb(null, []);
 
-	followIds = _.map(_.pluck(follow_activities, 'foreign_id'), function(foreign_id){
-		return parseInt(foreign_id.split(':')[1]);
-	});
-
-	Follow.find({_id: {$in: followIds}}).populate(['user', 'target']).exec(cb);
+followSchema.statics.pathsToPopulate = function(){
+  return 'actor target';
 };
+
+followSchema.methods.activityActorProp = function(){
+  return 'actor';
+}
+
+followSchema.plugin(autoIncrement.plugin, {model: 'Follow', field: '_id'});
 
 followSchema.pre('save', function (next) {
   this.wasNew = this.isNew;
@@ -82,12 +95,12 @@ followSchema.pre('save', function (next) {
 
 followSchema.post('save', function (doc) {
   if (this.wasNew) {
-  	FeedManager.followUser(doc.user, doc.target);
+  	FeedManager.followUser(doc.actor, doc.target);
   }
 });
 
 followSchema.post('remove', function (doc) {
-  FeedManager.unfollowUser(doc.user, doc.target);
+  FeedManager.unfollowUser(doc.actor, doc.target);
 });
 
 var Follow = connection.model('Follow', followSchema);

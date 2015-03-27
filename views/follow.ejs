@@ -4,11 +4,11 @@
         	<img class="pin-image" src="<%= activity.target.avatar_url %>">
         </div>
         <figcaption class="follow-caption">
-            <%= activity.user.username %> followed <%= activity.target.username %>
+            <%= activity.actor.username %> followed <%= activity.target.username %>
         </figcaption>
     </figure>
     <footer class="pin-attribution">
-        by <a href="/profile/<%= activity.user.username %>"><%= activity.user.username %></a>
+        by <a href="/profile/<%= activity.actor.username %>"><%= activity.actor.username %></a>
         <%= activity.timesince %>
     </footer>
 </article>

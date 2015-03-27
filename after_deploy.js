@@ -29,23 +29,23 @@ module.exports = function(){
             cb(null);
         },
         function(cb){
-            Pin.create({user: 1, item: 1});
-            Pin.create({user: 1, item: 2});
-            Pin.create({user: 1, item: 3});
-            Pin.create({user: 1, item: 4});
-            Pin.create({user: 2, item: 6});
-            Pin.create({user: 1, item: 5});
-            Pin.create({user: 1, item: 7});
-            Pin.create({user: 3, item: 9});
-            Pin.create({user: 3, item: 8});
-            Pin.create({user: 3, item: 4});
+            Pin.create({actor: 1, item: 1});
+            Pin.create({actor: 1, item: 2});
+            Pin.create({actor: 1, item: 3});
+            Pin.create({actor: 1, item: 4});
+            Pin.create({actor: 2, item: 6});
+            Pin.create({actor: 1, item: 5});
+            Pin.create({actor: 1, item: 7});
+            Pin.create({actor: 3, item: 9});
+            Pin.create({actor: 3, item: 8});
+            Pin.create({actor: 3, item: 4});
             cb(null);
         },
         function(cb){
-            Follow.create({user: 1, target: 2});
-            Follow.create({user: 1, target: 3});
-            Follow.create({user: 2, target: 1});
-            Follow.create({user: 2, target: 3});
+            Follow.create({actor: 1, target: 2});
+            Follow.create({actor: 1, target: 3});
+            Follow.create({actor: 2, target: 1});
+            Follow.create({actor: 2, target: 3});
         }
     ]);
 };

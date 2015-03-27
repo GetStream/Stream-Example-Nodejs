@@ -1,6 +1,6 @@
 <div class="aggregation media">
     <div class="pull-left">
-            <img src="<%= activities_aggregated.objs[0].user.avatar_url %>" width="55px">
+            <img src="<%= activities_aggregated.objs[0].actor.avatar_url %>" width="55px">
     </div>
     <div class="media-body">
         <div class="media-heading">
@@ -18,12 +18,12 @@
 			        <div class="pin-image-holder">
 			            <img class="pin-image" src="<%= activity.target.avatar_url %>">
 			            <figcaption class="follow-caption">
-			                <%= activity.user.username %> followed <%= activity.target.username %>
+			                <%= activity.actor.username %> followed <%= activity.target.username %>
 			            </figcaption>
 			        </div>
 			    </figure>
 			    <footer class="pin-attribution">
-                    by <a href="/profile/<%= activity.user.username %>"><%= activity.user.username %></a>
+                    by <a href="/profile/<%= activity.actor.username %>"><%= activity.actor.username %></a>
                     <%= activity.timesince %>
                 </footer>
 			</article>

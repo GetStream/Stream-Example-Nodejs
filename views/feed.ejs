@@ -1,7 +1,7 @@
 <div id="wrapper">
     <div class="container-pins">
         <% activities.forEach(function(activity){  %>
-            <%if (activity.pin) {%>
+            <%if (activity.verb == 'Pin') {%>
                 <%- include pin.ejs %>
             <% } else{ %>
             	<%- include follow.ejs %>

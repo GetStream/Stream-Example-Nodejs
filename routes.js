@@ -103,7 +103,7 @@ router.get('/', function(req, res){
             return next(err);
 
         if (req.isAuthenticated()){
-            Pin.find({user: req.user.id}).select('item -_id').lean().exec(function(err, pinned_items){
+            Pin.find({actor: req.user.id}).select('item -_id').lean().exec(function(err, pinned_items){
                 did_i_pin_it(popular, pinned_items);
                 return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
             });
@@ -125,9 +125,13 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
         var activities = response.body.results;
         enricher = new stream_node.Enricher();
 
-        enricher.enrichActivities(activities, function(err, enrichedActivities) {
+        enricher.enrichActivities(activities,
+          function(err, enrichedActivities){
+            // console.log(enrichedActivities);
             return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
-        });
+          }
+        );
+        
     });
 });
 
@@ -301,12 +305,14 @@ router.delete('/follow', ensureAuthenticated, function(req, res) {
 ******************/
 
 router.post('/pin', ensureAuthenticated, function(req, res){
-    var pinData = {user: req.user.id, item: req.body.item};
+    var pinData = {actor: req.user.id, item: req.body.item};
 
     record = new Pin(pinData);
     record.save(function(err) {
       if (err) return console.log(err);
     });
+
+    console.log(record);
 
     res.set('Content-Type', 'application/json');
     return res.send({'pin': {'id': req.body.item}});
@@ -315,7 +321,7 @@ router.post('/pin', ensureAuthenticated, function(req, res){
 
 router.delete('/pin', ensureAuthenticated, function(req, res) {
     var user = req.user.id;
-    var pinData = {user: req.user.id, item: req.body.item};
+    var pinData = {actor: req.user.id, item: req.body.item};
     
     Pin.findOne(pinData, function(err, foundPin){
         if (foundPin) {
@@ -332,7 +338,7 @@ router.delete('/pin', ensureAuthenticated, function(req, res) {
 ******************/
 
 router.get('/auto_follow/', ensureAuthenticated, function(req, res){
-    var followData = {user: req.user.id, target: 2};
+    var followData = {actor: req.user.id, target: 2};
 
     Follow.findOne(followData, function(err, foundFollow){
         if (!foundFollow) {
