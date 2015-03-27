@@ -112,76 +112,6 @@ router.get('/', function(req, res){
     });
 });
 
-var enrich = function(activities, callback){
-    var separated = _.groupBy(activities, function(activity){
-        return activity.verb.split(':')[0];
-    });
-
-    async.parallel({
-        pins: function(cb){
-            Pin.enrich_activities(separated.pin, cb);
-        },
-        follows: function(cb){
-            Follow.enrich_activities(separated.follow, cb);
-        }
-    }, function(err, enriched){
-        if (err)
-            return next(err);
-
-        var pinDict = _.groupBy(enriched.pins, function(enrichedActivity){
-            return 'pin:' + enrichedActivity.foreign_id();
-        });
-
-        var followDict = _.groupBy(enriched.follows, function(enrichedActivity){
-            return 'follow:' + enrichedActivity.foreign_id();
-        });
-
-
-        var enrichedActivities = _.extend(pinDict, followDict);
-        var results = [];
-
-        for (var i = 0; i < activities.length; ++i){
-            var activity_id = activities[i].foreign_id;
-            if (typeof enrichedActivities[activity_id] !== 'undefined'){
-                var enrichedActivity = enrichedActivities[activity_id][0].toJSON();
-                enrichedActivity.timesince = moment(activities[i].time).fromNow();
-
-                if (activity_id.split(':')[0].localeCompare('pin') == 0)
-                    enrichedActivity.pin = true;
-                else
-                    enrichedActivity.pin = false;
-
-                results.push(enrichedActivity);
-            }
-        }
-
-        callback(null, results);
-    });
-}
-
-var enrich_aggregated_activities = function(activities, callback){
-    var asyncStruct = {};
-
-    _.each(activities, function(activity, index){
-        asyncStruct[index] = function(cb){
-            enrich(activity.activities, cb);
-        }
-    });
-
-    var results = [];
-    async.parallel(asyncStruct, function(err, enrichedActivities){
-        _.each(enrichedActivities, function(activitiesArray, key){
-            var pin = false;
-            if (activitiesArray[0].pin)
-                pin = true;
-            
-            results.push({objs: activitiesArray, 'pin': pin});
-        });
-
-        callback(results);
-    });
-}
-
 /******************
   Flat Feed
 ******************/
@@ -193,9 +123,10 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = response.body.results;
+        enricher = new stream_node.Enricher();
 
-        enrich(activities, function(err, results){
-            return res.render('feed', {location: 'feed', user: req.user, activities: results, path: req.url});
+        enricher.enrichActivities(activities, function(err, enrichedActivities) {
+            return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
         });
     });
 });

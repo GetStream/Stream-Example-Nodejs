@@ -46,10 +46,11 @@ var pinSchema = new mongoose.Schema(
 		collection: 'Pin'
 	}
 );
+stream_node.mongoose.activitySchema(pinSchema);
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
 
 var Pin = connection.model('Pin', pinSchema);
-stream_node.mongoose.ActivityModel(Pin);
+stream_node.mongoose.activityModel(Pin);
 
 var followSchema = new mongoose.Schema(
 	{
@@ -61,6 +62,7 @@ var followSchema = new mongoose.Schema(
 		collection: 'Follow'
 	}
 );
+stream_node.mongoose.activitySchema(followSchema);
 followSchema.plugin(autoIncrement.plugin, {model: 'Follow', field: '_id'});
 followSchema.statics.enrich_activities = function(follow_activities, cb){
 	if (typeof follow_activities === 'undefined')
@@ -84,59 +86,12 @@ followSchema.post('save', function (doc) {
   }
 });
 
-followSchema.statics.as_activity = function(followData) {
-    // Follow.create(followData);
-
-    record = new Follow(followData);
-    record.save(function (err) {
-      if (err) console.log(err);
-      // saved!
-    });
-
-   //  {var user_id = followData.user,
-			// target_id = followData.target;
-
-   //  	var userFeed = client.feed('user', user_id),
-   //  	    flatFeed = client.feed('flat', user_id),
-   //      	aggregatedFeed = client.feed('aggregated', user_id);
-
-   //     	flatFeed.follow('user', target_id);
-   //      aggregatedFeed.follow('user', target_id);
-
-   //      var activity = {
-   //      	'actor': 'user:' + followData.user,
-   //      	'verb': 'follow',
-   //      	'object': 'follow:' + followData.target,
-   //      	'foreign_id': 'follow:' + insertedFollow.foreign_id(),
-   //      	'to': ['notification:' + followData.target]
-   //      };
-
-   //      userFeed.addActivity(activity, function(error, response, body) {
-   //      	if (err)
-   //      		return next(err);
-   //      });
-   //  });
-};
-
 followSchema.post('remove', function (doc) {
-
   FeedManager.unfollowUser(doc.user, doc.target);
-
 });
 
-followSchema.methods.remove_activity = function(user_id, target_id){
-    var userFeed = client.feed('user', user_id),
-    	flatFeed = client.feed('flat', user_id),
-    	aggregatedFeed = client.feed('aggregated', user_id);
-
-    flatFeed.unfollow('user', target_id);
-    aggregatedFeed.unfollow('user', target_id)
-
-    this.remove();
-};
-
 var Follow = connection.model('Follow', followSchema);
-stream_node.mongoose.ActivityModel(Follow);
+stream_node.mongoose.activityModel(Follow);
 
 User.find({}, function(err, foundUsers){
 	if (foundUsers.length == 0)
