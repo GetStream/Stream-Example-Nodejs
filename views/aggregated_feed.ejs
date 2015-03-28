@@ -1,6 +1,6 @@
 <div id="wrapper">
     <% activities.forEach(function(activities_aggregated){  %>
-        <%if (activities_aggregated.pin) {%>
+        <%if (activities_aggregated.verb == 'Pin') {%>
             <%- include aggregated_pin.ejs %>
         <% } else{ %>
             <%- include aggregated_follow.ejs %>

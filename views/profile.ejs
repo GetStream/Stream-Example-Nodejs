@@ -19,7 +19,7 @@
         <div class="col-lg-8">
             <div class="container-pins profile">
                 <% activities.forEach(function(activity){ %>
-                    <%if (activity.pin) {%>
+                    <%if (activity.verb == 'Pin') {%>
                         <%- include pin.ejs %>
                     <% } else{ %>
                         <%- include follow.ejs %>

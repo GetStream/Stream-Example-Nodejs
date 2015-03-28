@@ -1,6 +1,6 @@
 <div class="aggregation media">
     <div class="pull-left">
-            <img src="<%= activities_aggregated.objs[0].actor.avatar_url %>" width="55px">
+            <img src="<%= activities_aggregated.activities[0].actor.avatar_url %>" width="55px">
     </div>
     <div class="media-body">
         <div class="media-heading">
@@ -8,11 +8,11 @@
                 <div class="aggregation-time pull-right">
                 </div>
                 <div class="aggregation-title">
-                    <span><%= activities_aggregated.objs.length %> follows</span>
+                    <span><%= activities_aggregated.activities.length %> follows</span>
                 </div>
             </div>
         </div>
-        <% activities_aggregated.objs.forEach(function(activity){ %>
+        <% activities_aggregated.activities.forEach(function(activity){ %>
 			<article class="pin">
 			    <figure>
 			        <div class="pin-image-holder">

@@ -122,12 +122,11 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
     flatFeed.get({}, function(err, response, body){
         if (err) return next(err);
 
-        var activities = response.body.results;
+        var activities = body.results;
         enricher = new stream_node.Enricher();
 
         enricher.enrichActivities(activities,
           function(err, enrichedActivities){
-            // console.log(enrichedActivities);
             return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
           }
         );
@@ -145,8 +144,11 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
     aggregatedFeed.get({}, function(err, response, body){
         if (err) return next(err);
 
-        var activities = response.body.results;
-        enrich_aggregated_activities(activities, function(results){
+        var activities = body.results;
+        // console.log(activities);
+        enricher = new stream_node.Enricher();
+
+        enricher.enrichAggregatedActivities(activities, function(err, results){
             return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: results, path: req.url});
         });
     });
@@ -162,13 +164,19 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
     notificationFeed.get({mark_read:true, mark_seen: true}, function(err, response, body){
         if (err) return next(err);
 
-        if (body.results.length == 0) {
+        activities = body.results;
+
+        if (activities.length == 0) {
             return res.send('');
-        } else{
+        } else {
             req.user.unseen = 0;
-            enrich(body.results[0].activities, function(err, results){
-                return res.render('notification_follow', {lastFollower: results[0], count: results.length, layout: false});
-            });
+
+            enricher = new stream_node.Enricher();
+            enricher.enrichActivities(activities,
+              function(err, enrichedActivities){
+                return res.render('notification_follow', {lastFollower: enrichedActivities[0], count: enrichedActivities.length, layout: false});
+              }
+            );
         }
     });
 });
@@ -179,9 +187,8 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
 
 router.get('/people', ensureAuthenticated, function(req, res){
     User.find({}).nor([{'_id': 0}, {'_id': req.user.id}]).lean().exec(function(err, people){
-        Follow.find({user: req.user.id}).exec(function(err, followedUsers){
-            if (err)
-                return next(err);
+        Follow.find({actor: req.user.id}).exec(function(err, followedUsers){
+            if (err) return next(err);
 
             did_i_follow(people, followedUsers);
 
@@ -200,20 +207,22 @@ router.get('/profile', ensureAuthenticated, function(req, res, next){
     userFeed.get({}, function(err, response, body){
         if (err) return next(err);
 
-        var activities = response.body.results;
-        enrich(activities, function(err, results){
-            return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: results, path: req.url, show_feed: true});
-        })
+        var activities = body.results;
+        enricher = new stream_node.Enricher();
+
+        enricher.enrichActivities(activities,
+          function(err, enrichedActivities){
+            return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: enrichedActivities, path: req.url, show_feed: true});
+          }
+        );
     });
 });
 
 router.get('/profile/:user', ensureAuthenticated, function(req, res){
     User.findOne({username: req.params.user}, function(err, foundUser){
-        if (err)
-            return next(err);
+        if (err) return next(err);
 
-        if (!foundUser)
-            return res.send('User ' + req.params.user + ' not found.')
+        if (!foundUser) return res.send('User ' + req.params.user + ' not found.')
 
         var flatFeed = FeedManager.getNewsFeeds(req.user.id)['flat'];
 
@@ -221,9 +230,14 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
             if (err) return next(err);
 
             var activities = response.body.results;
-            enrich(activities, function(err, results){
-                return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: results, path: req.url, show_feed: true});
-            })
+            enricher = new stream_node.Enricher();
+
+            enricher.enrichActivities(activities,
+              function(err, enrichedActivities){
+                return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: enrichedActivities, path: req.url, show_feed: true});
+              }
+            );
+            
         });
     });
 });
@@ -276,7 +290,7 @@ router.get('/auth/github/callback',
 ******************/
 
 router.post('/follow', ensureAuthenticated, function(req, res){
-    var followData = {user: req.user.id, target: req.body.target};
+    var followData = {actor: req.user.id, target: req.body.target};
 
     record = new Follow(followData);
     record.save(function(err) {
@@ -311,8 +325,6 @@ router.post('/pin', ensureAuthenticated, function(req, res){
     record.save(function(err) {
       if (err) return console.log(err);
     });
-
-    console.log(record);
 
     res.set('Content-Type', 'application/json');
     return res.send({'pin': {'id': req.body.item}});

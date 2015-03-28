@@ -1,3 +1,4 @@
+<% if (activity.item) { %>
 <article class="pin">
     <figure>
         <div class="pin-image-holder">
@@ -37,3 +38,6 @@
         <%= activity.timesince %>
     </footer>
 </article>
+<% } else { %>
+    <% console.log('Not enriched activity: ', activity); %>
+<% } %>
