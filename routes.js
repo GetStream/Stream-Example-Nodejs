@@ -172,7 +172,7 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
             req.user.unseen = 0;
 
             enricher = new stream_node.Enricher();
-            enricher.enrichActivities(activities,
+            enricher.enrichActivities(activities[0].activities,
               function(err, enrichedActivities){
                 return res.render('notification_follow', {lastFollower: enrichedActivities[0], count: enrichedActivities.length, layout: false});
               }

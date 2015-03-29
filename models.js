@@ -78,6 +78,11 @@ var followSchema = new mongoose.Schema(
 
 stream_node.mongoose.activitySchema(followSchema);
 
+followSchema.methods.activityNotify = function() {
+  target_feed = FeedManager.getNotificationFeed(this.target);
+  return [target_feed];
+};
+
 followSchema.statics.pathsToPopulate = function(){
   return 'actor target';
 };
