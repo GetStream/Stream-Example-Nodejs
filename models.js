@@ -4,8 +4,9 @@ var mongoose = require('mongoose'),
     autoIncrement = require('mongoose-auto-increment'),
     stream_node = require('getstream-node');
 
-var connection = mongoose.createConnection(config.get('MONGOLAB_URI'));
+var connection = mongoose.connect(config.get('MONGOLAB_URI'));
 var FeedManager = stream_node.FeedManager;
+var StreamMongoose = stream_node.mongoose;
 
 autoIncrement.initialize(connection);
 
@@ -19,11 +20,9 @@ var userSchema = new mongoose.Schema(
     collection: 'Users'
   }
 );
-stream_node.mongoose.activitySchema(userSchema);
 userSchema.plugin(autoIncrement.plugin, {model: 'User', field: '_id'});
 
 var User = connection.model('User', userSchema);
-stream_node.FeedManager.registerActivityClass(User);
 
 var itemSchema = new mongoose.Schema(
   {
@@ -50,10 +49,10 @@ var pinSchema = new mongoose.Schema(
   }
 );
 
-stream_node.mongoose.activitySchema(pinSchema);
+StreamMongoose.activitySchema(pinSchema);
 
 pinSchema.statics.pathsToPopulate = function(){
-  return 'actor item';
+  return ['actor', 'item'];
 };
 
 pinSchema.methods.activityActorProp = function(){
@@ -63,7 +62,6 @@ pinSchema.methods.activityActorProp = function(){
 pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
 
 var Pin = connection.model('Pin', pinSchema);
-stream_node.mongoose.activityModel(Pin);
 
 var followSchema = new mongoose.Schema(
   {
@@ -76,7 +74,7 @@ var followSchema = new mongoose.Schema(
   }
 );
 
-stream_node.mongoose.activitySchema(followSchema);
+StreamMongoose.activitySchema(followSchema);
 
 followSchema.methods.activityNotify = function() {
   target_feed = FeedManager.getNotificationFeed(this.target);
@@ -84,7 +82,8 @@ followSchema.methods.activityNotify = function() {
 };
 
 followSchema.statics.pathsToPopulate = function(){
-  return 'actor target';
+  // return 'actor target';
+  return ['actor', 'target'];
 };
 
 followSchema.methods.activityActorProp = function(){
@@ -109,7 +108,6 @@ followSchema.post('remove', function (doc) {
 });
 
 var Follow = connection.model('Follow', followSchema);
-stream_node.mongoose.activityModel(Follow);
 
 User.find({}, function(err, foundUsers){
   if (foundUsers.length == 0)

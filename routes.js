@@ -10,13 +10,15 @@ var config = require('./config/config'),
     methodOverride = require('method-override'),
     moment = require('moment');
 
-var FeedManager = stream_node.FeedManager;
-
 var router = express.Router(),
     User = models.User,
     Item = models.Item,
     Pin = models.Pin,
     Follow = models.Follow;
+
+var FeedManager = stream_node.FeedManager;
+var StreamMongoose = stream_node.mongoose;
+var StreamBackend = new StreamMongoose.Backend();
 
 var ensureAuthenticated = function(req, res, next){
     if (req.isAuthenticated()) {
@@ -123,9 +125,9 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = body.results;
-        enricher = new stream_node.Enricher();
+        StreamBackend.serializeActivities(activities);
 
-        enricher.enrichActivities(activities,
+        StreamBackend.enrichActivities(activities,
           function(err, enrichedActivities){
             return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
           }
@@ -145,10 +147,10 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = body.results;
-        // console.log(activities);
-        enricher = new stream_node.Enricher();
+        StreamBackend.serializeActivities(activities);
 
-        enricher.enrichAggregatedActivities(activities, function(err, results){
+        StreamBackend.enrichAggregatedActivities(activities, function(err, results){
+            // console.log(activities);
             return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: results, path: req.url});
         });
     });
@@ -165,14 +167,14 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
         if (err) return next(err);
 
         activities = body.results;
+        StreamBackend.serializeActivities(activities);
 
         if (activities.length == 0) {
             return res.send('');
         } else {
             req.user.unseen = 0;
 
-            enricher = new stream_node.Enricher();
-            enricher.enrichActivities(activities[0].activities,
+            StreamBackend.enrichActivities(activities[0].activities,
               function(err, enrichedActivities){
                 return res.render('notification_follow', {lastFollower: enrichedActivities[0], count: enrichedActivities.length, layout: false});
               }
@@ -208,9 +210,9 @@ router.get('/profile', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = body.results;
-        enricher = new stream_node.Enricher();
+        StreamBackend.serializeActivities(activities);
 
-        enricher.enrichActivities(activities,
+        StreamBackend.enrichActivities(activities,
           function(err, enrichedActivities){
             return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: enrichedActivities, path: req.url, show_feed: true});
           }
@@ -230,9 +232,9 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
             if (err) return next(err);
 
             var activities = response.body.results;
-            enricher = new stream_node.Enricher();
+            StreamBackend.serializeActivities(activities);
 
-            enricher.enrichActivities(activities,
+            StreamBackend.enrichActivities(activities,
               function(err, enrichedActivities){
                 return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: enrichedActivities, path: req.url, show_feed: true});
               }
