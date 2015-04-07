@@ -129,6 +129,9 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
 
         StreamBackend.enrichActivities(activities,
           function(err, enrichedActivities){
+            for (var key in enrichedActivities) {
+                enrichedActivities[key].timesince = moment(enrichedActivities[key].time).fromNow();
+            }
             return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
           }
         );
@@ -149,9 +152,13 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
         var activities = body.results;
         StreamBackend.serializeActivities(activities);
 
-        StreamBackend.enrichAggregatedActivities(activities, function(err, results){
-            // console.log(activities);
-            return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: results, path: req.url});
+        StreamBackend.enrichAggregatedActivities(activities, function(err, enrichedActivities){
+            for (var key in enrichedActivities) {
+                for (var i in enrichedActivities[key]['activities']) {
+                    enrichedActivities[key]['activities'][i].timesince = moment(enrichedActivities[key]['activities'][i].time).fromNow();
+                }
+            }
+            return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: enrichedActivities, path: req.url});
         });
     });
 });
@@ -176,6 +183,9 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
 
             StreamBackend.enrichActivities(activities[0].activities,
               function(err, enrichedActivities){
+                for (var key in enrichedActivities) {
+                    enrichedActivities[key].timesince = moment(enrichedActivities[key].time).fromNow();
+                }
                 return res.render('notification_follow', {lastFollower: enrichedActivities[0], count: enrichedActivities.length, layout: false});
               }
             );
@@ -214,6 +224,9 @@ router.get('/profile', ensureAuthenticated, function(req, res, next){
 
         StreamBackend.enrichActivities(activities,
           function(err, enrichedActivities){
+            for (var key in enrichedActivities) {
+                enrichedActivities[key].timesince = moment(enrichedActivities[key].time).fromNow();
+            }
             return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: enrichedActivities, path: req.url, show_feed: true});
           }
         );
@@ -236,6 +249,9 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
 
             StreamBackend.enrichActivities(activities,
               function(err, enrichedActivities){
+                for (var key in enrichedActivities) {
+                    enrichedActivities[key].timesince = moment(enrichedActivities[key].time).fromNow();
+                }
                 return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: enrichedActivities, path: req.url, show_feed: true});
               }
             );

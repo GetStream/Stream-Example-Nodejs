@@ -1,15 +1,15 @@
-<% if (activity.target) { %>
+<% if (activity.object.target) { %>
 <article class="pin">
     <figure>
         <div class="pin-image-holder">
-        	<img class="pin-image" src="<%= activity.target.avatar_url %>">
+        	<img class="pin-image" src="<%= activity.object.target.avatar_url %>">
         </div>
         <figcaption class="follow-caption">
-            <%= activity.actor.username %> followed <%= activity.target.username %>
+            <%= activity.actor.username %> followed <%= activity.object.target.username %>
         </figcaption>
     </figure>
     <footer class="pin-attribution">
-        by <a href="/profile/<%= activity.actor.username %>"><%= activity.actor.username %></a>
+        by <a href="/profile/<%= activity.object.actor.username %>"><%= activity.object.actor.username %></a>
         <%= activity.timesince %>
     </footer>
 </article>

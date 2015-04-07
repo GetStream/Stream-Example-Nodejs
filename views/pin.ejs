@@ -1,8 +1,8 @@
-<% if (activity.item) { %>
+<% if (activity.object.item) { %>
 <article class="pin">
     <figure>
         <div class="pin-image-holder">
-            <img class="pin-image" src="/media/<%= activity.item.image_url %>">
+            <img class="pin-image" src="/media/<%= activity.object.item.image_url %>">
         </div>
         <%if (activity.message) {%>
             <figcaption class="pin-caption">
@@ -12,7 +12,7 @@
     </figure>
     <form class="pin-bottom create-destroy" method="POST" action="/pin">
         <div class="media">
-        <%if (activity.item.pinned) {%>
+        <%if (activity.object.item.pinned) {%>
             <div class="pull-left">
                 <input class="btn btn-danger btn-sm" type="submit" value="Unpin" data-toggle="Pin">
             </div>
@@ -30,11 +30,11 @@
                 </div>
             </div>
         </div>
-        <input name="influencer" type="hidden" value="<%= activity.item.image_url %>">
-        <input name="item" type="hidden" value="<%= activity.item._id %>">
+        <input name="influencer" type="hidden" value="<%= activity.object.item.image_url %>">
+        <input name="item" type="hidden" value="<%= activity.object.item._id %>">
     </form>
     <footer class="pin-attribution">
-        by <a href="/profile/<%= activity.actor.username %>"><%= activity.actor.username %></a>
+        by <a href="/profile/<%= activity.object.actor.username %>"><%= activity.object.actor.username %></a>
         <%= activity.timesince %>
     </footer>
 </article>

@@ -1,6 +1,6 @@
 <div class="aggregation media">
     <div class="pull-left">
-        	<img src="<%= activities_aggregated.activities[0].actor.avatar_url %>" width="55px">
+        	<img src="<%= activities_aggregated.activities[0].object.actor.avatar_url %>" width="55px">
     </div>
     <div class="media-body">
         <div class="media-heading">
@@ -16,7 +16,7 @@
             <article class="pin">
                 <figure>
                     <div class="pin-image-holder">
-                        <img class="pin-image" src="/media/<%= activity.item.image_url %>">
+                        <img class="pin-image" src="/media/<%= activity.object.item.image_url %>">
                     </div>
                     <%if (activity.message) {%>
                         <figcaption class="pin-caption">
@@ -36,11 +36,11 @@
                             </div>
                         </div>
                     </div>
-                    <input name="influencer" type="hidden" value="<%= activity.item.image_url %>">
-                    <input name="item" type="hidden" value="<%= activity.item._id %>">
+                    <input name="influencer" type="hidden" value="<%= activity.object.item.image_url %>">
+                    <input name="item" type="hidden" value="<%= activity.object.item._id %>">
                 </form>
                     <footer class="pin-attribution">
-                        by <a href="/profile/<%= activity.actor.username %>"><%= activity.actor.username %></a>
+                        by <a href="/profile/<%= activity.object.actor.username %>"><%= activity.object.actor.username %></a>
                         <%= activity.timesince %>
                         </footer>
             </article>
