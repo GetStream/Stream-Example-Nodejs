@@ -13,6 +13,7 @@
             </div>
         </div>
         <% activities_aggregated.activities.forEach(function(activity){ %>
+            <% if (activity.object.target) { %>
 			<article class="pin">
 			    <figure>
 			        <div class="pin-image-holder">
@@ -27,6 +28,9 @@
                     <span class="timesince"><%= activity.time %></span>
                 </footer>
 			</article>
+            <% } else { %>
+                <% console.log('Not enriched activity: ', activity); %>
+            <% } %>
         <% }) %>
     </div>
 </div>

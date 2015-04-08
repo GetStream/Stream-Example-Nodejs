@@ -1,6 +1,8 @@
 <div class="aggregation media">
     <div class="pull-left">
+         <% if (activities_aggregated.activities[0].object.item) { %>
         	<img src="<%= activities_aggregated.activities[0].object.actor.avatar_url %>" width="55px">
+         <% } %>        
     </div>
     <div class="media-body">
         <div class="media-heading">
@@ -13,6 +15,7 @@
             </div>
         </div>
         <% activities_aggregated.activities.forEach(function(activity){ %>
+            <% if (activity.object.item) { %>
             <article class="pin">
                 <figure>
                     <div class="pin-image-holder">
@@ -44,6 +47,9 @@
                         <span class="timesince"><%= activity.time %></span>
                         </footer>
             </article>
+            <% } else { %>
+                <% console.log('Not enriched activity: ', activity); %>
+            <% } %>
         <% }) %>
     </div>
 </div>

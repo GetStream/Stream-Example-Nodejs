@@ -146,6 +146,7 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = body.results;
+        
         StreamBackend.serializeActivities(activities);
 
         StreamBackend.enrichAggregatedActivities(activities, function(err, enrichedActivities){
