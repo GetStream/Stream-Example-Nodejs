@@ -24,7 +24,7 @@
 			    </figure>
 			    <footer class="pin-attribution">
                     by <a href="/profile/<%= activity.actor.username %>"><%= activity.object.actor.username %></a>
-                    <%= activity.timesince %>
+                    <span class="timesince"><%= activity.time %></span>
                 </footer>
 			</article>
         <% }) %>

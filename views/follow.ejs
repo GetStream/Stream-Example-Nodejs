@@ -10,7 +10,7 @@
     </figure>
     <footer class="pin-attribution">
         by <a href="/profile/<%= activity.object.actor.username %>"><%= activity.object.actor.username %></a>
-        <%= activity.timesince %>
+        <span class="timesince"><%= activity.time %></span>
     </footer>
 </article>
 <% } else { %>

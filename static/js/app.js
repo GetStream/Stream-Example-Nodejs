@@ -84,3 +84,9 @@ app.Realtime.prototype = {
 		}
 	}
 };
+
+$(document).ready(function() {
+	$(".timesince").html(function(index, value) {
+	    return moment(value).fromNow();
+	});
+});
