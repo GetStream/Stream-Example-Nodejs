@@ -6,7 +6,7 @@
                     <img src="<%= lastFollower.object.actor.avatar_url %>" width="32">
                     <figcaption>
                         <%= lastFollower.object.actor.username %><%if (count > 1) {%> and  <%= count - 1 %>more <% } %> followed you
-                        <%= lastFollower.timesince %>
+                        <span class="timesince"><%= lastFollower.time %></span>
                     </figcaption>
                 </div>
             </figure>

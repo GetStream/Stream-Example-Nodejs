@@ -9,6 +9,9 @@ App.prototype = {
 		$('#notification-toggle').click(function() {
 			$.get("/notification_feed/", function(data) {
 				$("#notification-container").html(data);
+				$("#notification-container .timesince").html(function(index, value) {
+				    return moment(value).fromNow();
+				});
 			});
 		});
         setTimeout(that.autofollow, 1000);
