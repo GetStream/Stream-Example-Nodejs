@@ -98,7 +98,7 @@ router.use(methodOverride(function(req, res){
   }
 }))
 
-router.get('/', function(req, res){
+router.get('/', function(req, res, next){
     Item.find({}).populate('user').lean().exec(function(err, popular){
         if (err)
             return next(err);

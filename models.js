@@ -1,18 +1,14 @@
 var mongoose = require('mongoose'),
     config = require('./config/config'),
     _ = require('underscore'),
-    autoIncrement = require('mongoose-auto-increment'),
     stream_node = require('getstream-node');
 
 var connection = mongoose.connect(config.get('MONGOLAB_URI'));
 var FeedManager = stream_node.FeedManager;
 var StreamMongoose = stream_node.mongoose;
 
-autoIncrement.initialize(connection);
-
 var userSchema = new mongoose.Schema(
   {
-    _id: Number,
     username: {type: String, required: true},
     avatar_url: {type: String, required: true}
   },
@@ -20,13 +16,11 @@ var userSchema = new mongoose.Schema(
     collection: 'Users'
   }
 );
-userSchema.plugin(autoIncrement.plugin, {model: 'User', field: '_id'});
 
 var User = connection.model('User', userSchema);
 
 var itemSchema = new mongoose.Schema(
   {
-    _id: Number,
     user: {type: Number, required: true, ref: 'User'},
     image_url: {type: String, required: true},
     pin_count: {type: Number, default: 0}
@@ -34,13 +28,10 @@ var itemSchema = new mongoose.Schema(
   {
     collection: 'Item'
   }
-);
-itemSchema.plugin(autoIncrement.plugin, {model: 'Item', field: '_id'});
-var Item = connection.model('Item', itemSchema);
+);var Item = connection.model('Item', itemSchema);
 
 var pinSchema = new mongoose.Schema(
   {
-    _id: Number,
     actor: {type: Number, required: true, ref: 'User'},
     item: {type: Number, required: true, ref: 'Item'},
   },
@@ -59,13 +50,10 @@ pinSchema.methods.activityActorProp = function(){
   return 'actor';
 }
 
-pinSchema.plugin(autoIncrement.plugin, {model: 'Pin', field: '_id'});
-
 var Pin = connection.model('Pin', pinSchema);
 
 var followSchema = new mongoose.Schema(
   {
-    _id: Number,
     actor: {type: Number, required: true, ref: 'User'},
     target: {type: Number, required: true, ref: 'User'},
   },
@@ -82,15 +70,12 @@ followSchema.methods.activityNotify = function() {
 };
 
 followSchema.statics.pathsToPopulate = function(){
-  // return 'actor target';
   return ['actor', 'target'];
 };
 
 followSchema.methods.activityActorProp = function(){
   return 'actor';
 }
-
-followSchema.plugin(autoIncrement.plugin, {model: 'Follow', field: '_id'});
 
 followSchema.pre('save', function (next) {
   this.wasNew = this.isNew;
@@ -108,11 +93,6 @@ followSchema.post('remove', function (doc) {
 });
 
 var Follow = connection.model('Follow', followSchema);
-
-User.find({}, function(err, foundUsers){
-  if (foundUsers.length == 0)
-    require('./after_deploy')();
-});
 
 module.exports = {
   User: User,
