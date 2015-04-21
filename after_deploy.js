@@ -8,59 +8,51 @@ var User = models.User,
     Item = models.Item;
 
 var firstUser = false;
+var imports = [];
 
-module.exports = importData = function(){
-    async.series([
-        function(callback){
-            console.log('creating users...');
-            firstUser = new User({username: 'admin', avatar_url: 'admin.jpg'});
-            firstUser.save(function(err) {
-                if (err) console.log(err);    
-                callback(null);            
-            });
-        },
-        function (callback) {
-            User.create({username: 'Andrew', avatar_url: 'https://github.com/identicons/jasonlong.png'}, function(err) {
-                if (err) console.log(err);
-                callback(null);
-            });
-        },
-        function (callback) {
-            User.create({username: 'Sergey', avatar_url: 'https://avatars0.githubusercontent.com/u/4436860?v=3&s=96'}, function(err) {
-                if (err) console.log(err);
-                callback(null);
-            });
-        },
-        function (callback) {
-            User.create({username: 'Thomas', avatar_url: 'https://avatars0.githubusercontent.com/u/125464?v=3&s=96'}, function(err) {
-                if (err) console.log(err);
-                callback(null);
-            });
-        },
-        function(callback){
-            console.log('creating items...');
-            var mediaFiles = fs.readdirSync('./media/');
+var users = [
+    {username: 'Andrew', avatar_url: 'https://github.com/identicons/jasonlong.png'},
+    {username: 'Sergey', avatar_url: 'https://avatars0.githubusercontent.com/u/4436860?v=3&s=96'},
+    {username: 'Thomas', avatar_url: 'https://avatars0.githubusercontent.com/u/125464?v=3&s=96'}
+];
 
-            i = 0;
-            mediaFiles.forEach(function(fileName){
-                Item.create({user: firstUser._id, image_url: fileName}, function(err, newArticle){
-                    if (err){
-                        process.exit(1);
-                        return console.log(err);
-                    }
+module.exports = importData = function() {
+    // create the first user before everything else
+    console.log('Starting import with User admin');
+    User.create({username: 'admin', avatar_url: 'admin.jpg'}, function(err, createdUser) {
+        firstUser = createdUser;
 
-                    i++;
-                    if (i == mediaFiles.length) {
-                         callback(null);
-                    }
+        for (var i in users) {
+            imports.push(function(newUser) {
+                return function(done) {
+                    console.log('Importing User', newUser.username);
+                    User.create(newUser, function(err, createdUser) {
+                        if (!firstUser) {
+                            firstUser = createdUser;
+                        }
+                        done(err);
+                    });
+                }
+            }(users[i]));
+        }
+
+        var mediaFiles = fs.readdirSync('./media/');
+
+        mediaFiles.forEach(function(fileName){
+            imports.push(function(done) {
+                console.log('Importing Item', fileName);
+                Item.create({user: firstUser._id, image_url: fileName}, function(err, createdItem){
+                    done(err);
                 });
             });
-           
-        }
-    ],
-    function(err, results){
-        console.log('import completed');
-        process.exit(0);
+        });
+
+        async.parallel(imports,
+        function(err) {
+            if (err) console.log(err);
+            console.log('import completed');
+            process.exit(0);
+        });
     });
 };
 
