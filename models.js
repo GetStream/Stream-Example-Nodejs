@@ -4,6 +4,7 @@ var mongoose = require('mongoose'),
     stream_node = require('getstream-node');
 
 var connection = mongoose.connect(config.get('MONGOLAB_URI'));
+
 var FeedManager = stream_node.FeedManager;
 var StreamMongoose = stream_node.mongoose;
 
@@ -21,7 +22,7 @@ var User = connection.model('User', userSchema);
 
 var itemSchema = new mongoose.Schema(
   {
-    user: {type: Number, required: true, ref: 'User'},
+    user: {type: String, required: true, ref: 'User'},
     image_url: {type: String, required: true},
     pin_count: {type: Number, default: 0}
   },
@@ -32,7 +33,7 @@ var itemSchema = new mongoose.Schema(
 
 var pinSchema = new mongoose.Schema(
   {
-    actor: {type: Number, required: true, ref: 'User'},
+    actor: {type: String, required: true, ref: 'User'},
     item: {type: Number, required: true, ref: 'Item'},
   },
   {
@@ -54,7 +55,7 @@ var Pin = connection.model('Pin', pinSchema);
 
 var followSchema = new mongoose.Schema(
   {
-    actor: {type: Number, required: true, ref: 'User'},
+    actor: {type: String, required: true, ref: 'User'},
     target: {type: Number, required: true, ref: 'User'},
   },
   {
