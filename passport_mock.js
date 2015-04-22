@@ -1,4 +1,5 @@
 var User = require('./models').User;
+var FeedManager = require('getstream-node').FeedManager;
 
 module.exports = {
   initialize: function(sessionUserObject) {
@@ -8,8 +9,6 @@ module.exports = {
         User.findOne({username: 'Andrew'}, function(err, found){
             if (err) console.log(err);
 
-            found = found.toJSON();
-            found.avatar_url = found.avatar_url;
             found.github_id = 639382;
             found.displayName = 'Andrew';
 

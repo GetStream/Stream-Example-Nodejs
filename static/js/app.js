@@ -61,7 +61,7 @@ app.Realtime = function() {
 };
 
 app.Realtime.prototype = {
-	initialize : function(feed_slug, feed_user_id, token, elementIdentifier, initialCount) {
+	initialize : function(streamClient, feed_slug, feed_user_id, token, elementIdentifier, initialCount) {
 		this.token = token;
 		this.elementIdentifier = elementIdentifier;
 		this.client = streamClient;

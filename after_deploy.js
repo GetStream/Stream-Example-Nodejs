@@ -19,7 +19,7 @@ var users = [
 module.exports = importData = function() {
     // create the first user before everything else
     console.log('Starting import with User admin');
-    User.create({username: 'admin', avatar_url: 'admin.jpg'}, function(err, createdUser) {
+    User.create({username: 'admin', avatar_url: 'https://avatars0.githubusercontent.com/u/4336861?v=3&s=96'}, function(err, createdUser) {
         firstUser = createdUser;
 
         for (var i in users) {

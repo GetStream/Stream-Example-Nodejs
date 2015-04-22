@@ -1,6 +1,6 @@
 <div class="aggregation media">
     <div class="pull-left">
-            <img src="<%= activities_aggregated.activities[0].object.actor.avatar_url %>" width="55px">
+            <img src="<%= activities_aggregated.activities[0].object.user.avatar_url %>" width="55px">
     </div>
     <div class="media-body">
         <div class="media-heading">
@@ -24,7 +24,7 @@
 			        </div>
 			    </figure>
 			    <footer class="pin-attribution">
-                    by <a href="/profile/<%= activity.actor.username %>"><%= activity.object.actor.username %></a>
+                    by <a href="/profile/<%= activity.actor.username %>"><%= activity.object.user.username %></a>
                     <span class="timesince"><%= activity.time %></span>
                 </footer>
 			</article>

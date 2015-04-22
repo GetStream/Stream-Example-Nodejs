@@ -26,25 +26,31 @@ var ensureAuthenticated = function(req, res, next){
     res.redirect('/login');
 };
 
-var did_i_pin_it = function(all_items, pinned_items){
-    var pinned_items_ids = _.pluck(pinned_items, 'item');
-
-    _.each(all_items, function(item){
-        if (pinned_items_ids.indexOf(item._id) >= 0){
+var did_i_pin_it = function(items, pins){
+    var pinned_items_ids = _.map(pins, function(pin) { return pin.item.toHexString() });
+    _.each(items, function(item){
+        if (pinned_items_ids.indexOf(item._id.toHexString()) !== -1){
             item.pinned = true;
         }
     });
 };
 
-var did_i_follow = function(all_users, followed_users){
-    var followed_users_ids = _.pluck(followed_users, 'target');
-
-    _.each(all_users, function(user){
-        if (followed_users_ids.indexOf(user._id) >= 0){
+var did_i_follow = function(users, followers){
+    var followed_users_ids = _.map(followers, function(item) { return item.target.toHexString() });
+    _.each(users, function(user){
+        if (followed_users_ids.indexOf(user._id.toHexString()) !== -1) {
             user.followed = true
         }
     });
 };
+
+router.use(function (req, res, next) {
+    res.locals = {
+        StreamConfigs: stream_node.settings,
+        NotificationFeed: FeedManager.getNotificationFeed(req.user._id)
+    };
+    next();
+});
 
 router.use(function (error, req, res, next) {
     if (!error) {
@@ -88,7 +94,7 @@ router.use(function(req, res, next){
     Support DELETE from forms
 *******************************/
 
-router.use(bodyParser.urlencoded())
+// router.use(bodyParser.urlencoded())
 router.use(methodOverride(function(req, res){
   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
     // look in urlencoded POST bodies and delete it
@@ -104,7 +110,7 @@ router.get('/', function(req, res, next){
             return next(err);
 
         if (req.isAuthenticated()){
-            Pin.find({actor: req.user.id}).select('item -_id').lean().exec(function(err, pinned_items){
+            Pin.find({user: req.user.id}).lean().exec(function(err, pinned_items){
                 did_i_pin_it(popular, pinned_items);
                 return res.render('trending', {location: 'trending', user: req.user, stuff: popular});
             });
@@ -187,12 +193,10 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
 ******************/
 
 router.get('/people', ensureAuthenticated, function(req, res){
-    User.find({}).nor([{'_id': 0}, {'_id': req.user.id}]).lean().exec(function(err, people){
-        Follow.find({actor: req.user.id}).exec(function(err, followedUsers){
+    User.find({}).lean().exec(function(err, people){
+        Follow.find({user: req.user.id}).exec(function(err, follows){
             if (err) return next(err);
-
-            did_i_follow(people, followedUsers);
-
+            did_i_follow(people, follows);
             return res.render('people', {location: 'people', user: req.user, people: people, path: req.url, show_feed: false});
         });
     })
@@ -207,10 +211,7 @@ router.get('/profile', ensureAuthenticated, function(req, res, next){
 
     userFeed.get({}, function(err, response, body){
         if (err) return next(err);
-
         var activities = body.results;
-        StreamBackend.serializeActivities(activities);
-
         StreamBackend.enrichActivities(activities,
           function(err, enrichedActivities){
             return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: enrichedActivities, path: req.url, show_feed: true});
@@ -290,52 +291,62 @@ router.get('/auth/github/callback',
   Follow
 ******************/
 
-router.post('/follow', ensureAuthenticated, function(req, res){
-    var followData = {actor: req.user.id, target: req.body.target};
-
-    record = new Follow(followData);
-    record.save(function(err) {
-      if (err) return console.log(err);
+router.post('/follow', ensureAuthenticated, function(req, res, next){
+    User.findOne({_id: req.body.target}, function(err, target) {
+        if (target) {
+            var followData = {user: req.user, target: req.body.target};
+            var follow = new Follow(followData);
+            follow.save(function(err) {
+                if (err) next(err);
+                res.set('Content-Type', 'application/json');
+                return res.send({'follow': {'id': req.body.target}});
+            });
+        } else {
+            res.status(404).send('Not found');
+        }
     });
-
-    res.set('Content-Type', 'application/json');
-    return res.send({'follow': {'id': req.body.target}});
 });
 
 router.delete('/follow', ensureAuthenticated, function(req, res) {
-    var followData = {user: req.user.id, target: req.body.target};
-
-    Follow.findOne(followData, function(err, foundFollow){
-        if (foundFollow) {
-            foundFollow.remove();
+    User.findOne({_id: req.body.target}, function(err, target) {
+        if (target) {
+            var followData = {user: req.user, target: req.body.target};
+            var follow = new Follow(followData);
+            follow.remove(function(err) {
+                if (err) next(err);
+                res.set('Content-Type', 'application/json');
+                return res.send({'follow': {'id': req.body.target}});
+            });
+        } else {
+            res.status(404).send('Not found');
         }
     });
-
-    res.set('Content-Type', 'application/json');
-    return res.send({'follow': {'id': req.body.target}});
 });
 
 /******************
   Pin
 ******************/
 
-router.post('/pin', ensureAuthenticated, function(req, res){
-    var pinData = {actor: req.user.id, item: req.body.item};
-
-    record = new Pin(pinData);
-    record.save(function(err) {
-      if (err) return console.log(err);
+router.post('/pin', ensureAuthenticated, function(req, res, next){
+    Item.findOne({_id: req.body.item}, function(err, item){
+        if (item) {
+            var pinData = {user: req.user, item: item};
+            var pin = new Pin(pinData);
+            pin.save(function(err) {
+                if (err) next(err);
+                res.set('Content-Type', 'application/json');
+                return res.send({'pin': {'id': req.body.item}});
+            });
+        } else {
+            res.status(404).send('Not found');
+        }
     });
-
-    res.set('Content-Type', 'application/json');
-    return res.send({'pin': {'id': req.body.item}});
-    
 });
 
 router.delete('/pin', ensureAuthenticated, function(req, res) {
-    var user = req.user.id;
-    var pinData = {actor: req.user.id, item: req.body.item};
-    
+    var user = req.user;
+    var pinData = {user: req.user.id, item: req.body.item};
+
     Pin.findOne(pinData, function(err, foundPin){
         if (foundPin) {
             foundPin.remove();
@@ -350,20 +361,21 @@ router.delete('/pin', ensureAuthenticated, function(req, res) {
   Auto Follow
 ******************/
 
-router.get('/auto_follow/', ensureAuthenticated, function(req, res){
-    var followData = {actor: req.user.id, target: 2};
+router.get('/auto_follow/', ensureAuthenticated, function(req, res, next){
+    var followData = {user: req.user, target: req.user};
+    res.set('Content-Type', 'application/json');
 
     Follow.findOne(followData, function(err, foundFollow){
         if (!foundFollow) {
             record = new Follow(followData);
             record.save(function(err) {
-              if (err) return console.log(err);
+                if (err) next(err);
+                return res.send({'follow': {'id': record._id}});
             });
+        } else {
+            return res.send({});
         }
     });
-
-    res.set('Content-Type', 'application/json');
-    return res.send({'follow': {'id': 2}});
 });
 
 module.exports = router;

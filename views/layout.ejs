@@ -57,15 +57,9 @@
 		<script src="/js/moment.min.js"></script>
 		<script>
 		    <%if (user) {%>
-
-			streamClient = stream.connect('<%= user.APP_KEY %>', null, '<%= user.APP_ID %>');
-
-			notification = new app.Realtime('notification', '<%= user.id %>', '<%= user.token %>', '#notifications_inner', '<%= user.unseen %>');
+			streamClient = stream.connect('<%= StreamConfigs.apiKey %>', null, '<%= StreamConfigs.apiAppId %>');
+			notification = new app.Realtime(streamClient, 'notification', '<%= user.id %>', '<%= NotificationFeed.token %>', '#notifications_inner', '<%= user.unseen %>');
 			<% } %>
-
 			</script>
-		
-
-
 	</body>
 </html>
