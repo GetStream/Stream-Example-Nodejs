@@ -16,5 +16,6 @@
     "stream", "mongolab"
   ],
   "scripts": {
+    "postdeploy": "./after_deploy.js"
   }
 }
