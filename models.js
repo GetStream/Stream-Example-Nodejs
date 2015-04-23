@@ -49,6 +49,10 @@ pinSchema.statics.pathsToPopulate = function(){
   return ['user', 'item'];
 };
 
+pinSchema.methods.activityForeignId = function() {
+  return this.user._id + ':' + this.item._id;
+};
+
 var Pin = mongoose.model('Pin', pinSchema);
 
 var followSchema = new Schema(
@@ -90,7 +94,6 @@ followSchema.post('save', function(doc) {
 });
 
 followSchema.post('remove', function(doc) {
-  console.log(doc);
   FeedManager.unfollowUser(doc.user, doc.target);
 });
 

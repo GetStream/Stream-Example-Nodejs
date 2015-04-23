@@ -226,7 +226,7 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
 
         if (!foundUser) return res.send('User ' + req.params.user + ' not found.')
 
-        var flatFeed = FeedManager.getNewsFeeds(req.user.id)['flat'];
+        var flatFeed = FeedManager.getNewsFeeds(foundUser._id)['flat'];
 
         flatFeed.get({}, function(err, response, body){
             if (err) return next(err);
