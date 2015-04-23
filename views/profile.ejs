@@ -7,6 +7,7 @@
         <form method="POST" action="/follow" class="create-destroy">
             <%if (profile_user.followed) {%>
                 <input name="remove" type="hidden" value="1">
+                <input type="hidden" name="_method" value="DELETE">
                 <input class="btn btn-default btn-danger btn-destroy" type="submit" value="Unfollow" data-toggle="Follow">
              <% } else{ %>
                 <input class="btn btn-default btn-create" type="submit" value="Follow" data-toggle="Unfollow">
