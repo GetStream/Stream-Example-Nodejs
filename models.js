@@ -64,8 +64,12 @@ var followSchema = new Schema(
 StreamMongoose.activitySchema(followSchema);
 
 followSchema.methods.activityNotify = function() {
-  target_feed = FeedManager.getNotificationFeed(this.target);
+  target_feed = FeedManager.getNotificationFeed(this.target._id);
   return [target_feed];
+};
+
+followSchema.methods.activityForeignId = function() {
+  return this.user._id + ':' + this.target._id;
 };
 
 followSchema.statics.pathsToPopulate = function(){
@@ -79,12 +83,15 @@ followSchema.pre('save', function(next) {
 
 followSchema.post('save', function(doc) {
   if (doc.wasNew) {
-    FeedManager.followUser(doc.user._id, doc.target);
+    var userId = doc.user._id || doc.user;
+    var targetId = doc.target._id || doc.target;
+    FeedManager.followUser(userId, targetId);
   }
 });
 
 followSchema.post('remove', function(doc) {
-  FeedManager.unfollowUser(doc.user._id, doc.target);
+  console.log(doc);
+  FeedManager.unfollowUser(doc.user, doc.target);
 });
 
 var Follow = mongoose.model('Follow', followSchema);

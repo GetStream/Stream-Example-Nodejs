@@ -94,7 +94,7 @@ router.use(function(req, res, next){
     Support DELETE from forms
 *******************************/
 
-// router.use(bodyParser.urlencoded())
+router.use(bodyParser.urlencoded())
 router.use(methodOverride(function(req, res){
   if (req.body && typeof req.body === 'object' && '_method' in req.body) {
     // look in urlencoded POST bodies and delete it
@@ -308,10 +308,8 @@ router.post('/follow', ensureAuthenticated, function(req, res, next){
 });
 
 router.delete('/follow', ensureAuthenticated, function(req, res) {
-    User.findOne({_id: req.body.target}, function(err, target) {
-        if (target) {
-            var followData = {user: req.user, target: req.body.target};
-            var follow = new Follow(followData);
+    Follow.findOne({user: req.user, target: req.body.target}, function(err, follow) {
+        if (follow) {
             follow.remove(function(err) {
                 if (err) next(err);
                 res.set('Content-Type', 'application/json');
