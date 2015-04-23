@@ -7,13 +7,13 @@
     "nodejs"
   ],
   "website": "https://getstream.io/",
-  "repository": "https://github.com/mihaineacsu/stream_nodejs/",
+  "repository": "https://github.com/tbarbugli/stream_nodejs/",
   "logo": "http://33.media.tumblr.com/avatar_be8b5eef9ae6_128.png",
   "success_url": "/",
   "env": {
   },
   "addons": [
-    "stream", "mongolab", "rollbar"
+    "stream", "mongolab"
   ],
   "scripts": {
   }
