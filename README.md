@@ -7,6 +7,11 @@ This example Node.js app shows you how you can use [GetStream.io](https://getstr
 ### Install
 	npm install
 
+### Load initial data
+The app needs some initial data in order to function correctly. Run this script to load it:
+
+	./after_deploy.js
+
 ### Run
 You'll need a mongodb instance running in the background. Or set up the URI to a remote one by modifying **config/config.js**.
 
