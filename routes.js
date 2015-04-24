@@ -130,8 +130,6 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = body.results;
-        StreamBackend.serializeActivities(activities);
-
         StreamBackend.enrichActivities(activities,
           function(err, enrichedActivities){
             return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
@@ -152,9 +150,6 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
         if (err) return next(err);
 
         var activities = body.results;
-        
-        StreamBackend.serializeActivities(activities);
-
         StreamBackend.enrichAggregatedActivities(activities, function(err, enrichedActivities){
             return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: enrichedActivities, path: req.url});
         });
@@ -172,8 +167,6 @@ router.get('/notification_feed/', ensureAuthenticated, function(req, res){
         if (err) return next(err);
 
         activities = body.results;
-        StreamBackend.serializeActivities(activities);
-
         if (activities.length == 0) {
             return res.send('');
         } else {
