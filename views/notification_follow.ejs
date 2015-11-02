@@ -3,9 +3,9 @@
         <article>
             <figure>
                 <div>
-                    <img src="<%= lastFollower.object.actor.avatar_url %>" width="32">
+                    <img src="<%= lastFollower.object.user.avatar_url %>" width="32">
                     <figcaption>
-                        <%= lastFollower.object.actor.username %><%if (count > 1) {%> and  <%= count - 1 %>more <% } %> followed you
+                        <%= lastFollower.object.user.username %><%if (count > 1) {%> and  <%= count - 1 %>more <% } %> followed you
                         <span class="timesince"><%= lastFollower.time %></span>
                     </figcaption>
                 </div>

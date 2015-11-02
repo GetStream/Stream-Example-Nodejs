@@ -45,10 +45,12 @@ var did_i_follow = function(users, followers){
 };
 
 router.use(function (req, res, next) {
-    res.locals = {
-        StreamConfigs: stream_node.settings,
-        NotificationFeed: FeedManager.getNotificationFeed(req.user._id)
-    };
+    if(req.isAuthenticated()) {
+        res.locals = {
+            StreamConfigs: stream_node.settings,
+            NotificationFeed: FeedManager.getNotificationFeed(req.user.id || req.user.github_id),
+        };
+    }
     next();
 });
 
@@ -287,7 +289,7 @@ router.get('/auth/github/callback',
 router.post('/follow', ensureAuthenticated, function(req, res, next){
     User.findOne({_id: req.body.target}, function(err, target) {
         if (target) {
-            var followData = {user: req.user, target: req.body.target};
+            var followData = {user: req.user.id, target: req.body.target};
             var follow = new Follow(followData);
             follow.save(function(err) {
                 if (err) next(err);
@@ -301,7 +303,7 @@ router.post('/follow', ensureAuthenticated, function(req, res, next){
 });
 
 router.delete('/follow', ensureAuthenticated, function(req, res) {
-    Follow.findOne({user: req.user, target: req.body.target}, function(err, follow) {
+    Follow.findOne({user: req.user.id, target: req.body.target}, function(err, follow) {
         if (follow) {
             follow.remove(function(err) {
                 if (err) next(err);
@@ -320,8 +322,9 @@ router.delete('/follow', ensureAuthenticated, function(req, res) {
 
 router.post('/pin', ensureAuthenticated, function(req, res, next){
     Item.findOne({_id: req.body.item}, function(err, item){
+        console.log('item', item);
         if (item) {
-            var pinData = {user: req.user, item: item};
+            var pinData = {user: req.user.id, item: item};
             var pin = new Pin(pinData);
             pin.save(function(err) {
                 if (err) next(err);
@@ -353,13 +356,15 @@ router.delete('/pin', ensureAuthenticated, function(req, res) {
 ******************/
 
 router.get('/auto_follow/', ensureAuthenticated, function(req, res, next){
-    var followData = {user: req.user, target: req.user};
+    var followData = {user: req.user.id, target: req.user.id};
     res.set('Content-Type', 'application/json');
 
     Follow.findOne(followData, function(err, foundFollow){
         if (!foundFollow) {
+            console.log('follow data', followData);
             record = new Follow(followData);
             record.save(function(err) {
+                console.error(err);
                 if (err) next(err);
                 return res.send({'follow': {'id': record._id}});
             });
