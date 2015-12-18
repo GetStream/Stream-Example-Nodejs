@@ -90,10 +90,11 @@ router.use(function(req, res, next){
             req.user.APP_ID = FeedManager.settings.apiAppId;
             req.user.APP_KEY = FeedManager.settings.apiKey;
 
-            notificationFeed.get({limit: 0}, function(err, response, body){
-                if (typeof body !== 'undefined') req.user.unseen = body.unseen;
-                next();
-            });
+            notificationFeed.get({limit: 0})
+                .then(function(body){
+                    if (typeof body !== 'undefined') req.user.unseen = body.unseen;
+                    next();
+                });
         });
 
     } else {
