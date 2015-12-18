@@ -43,7 +43,7 @@ var pinSchema = new Schema(
   }
 );
 
-StreamMongoose.activitySchema(pinSchema);
+pinSchema.plugin(StreamMongoose.activity);
 
 pinSchema.statics.pathsToPopulate = function(){
   return ['user', 'item'];
@@ -65,7 +65,7 @@ var followSchema = new Schema(
   }
 );
 
-StreamMongoose.activitySchema(followSchema);
+followSchema.plugin(StreamMongoose.activity);
 
 followSchema.methods.activityNotify = function() {
   target_feed = FeedManager.getNotificationFeed(this.target._id);
@@ -79,11 +79,6 @@ followSchema.methods.activityForeignId = function() {
 followSchema.statics.pathsToPopulate = function(){
   return ['user', 'target'];
 };
-
-followSchema.pre('save', function(next) {
-  this.wasNew = this.isNew;
-  next();
-});
 
 followSchema.post('save', function(doc) {
   if (doc.wasNew) {

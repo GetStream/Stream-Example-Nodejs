@@ -19,6 +19,16 @@ var FeedManager = stream_node.FeedManager;
 var StreamMongoose = stream_node.mongoose;
 var StreamBackend = new StreamMongoose.Backend();
 
+var enrichActivities = function (body) {
+    var activities = body.results;
+    return StreamBackend.enrichActivities(activities);
+};
+
+var enrichAggregatedActivities = function (body) {
+    var activities = body.results;
+    return StreamBackend.enrichAggregatedActivities(activities);
+}
+
 var ensureAuthenticated = function(req, res, next){
     if (req.isAuthenticated()) {
         return next();
@@ -128,17 +138,12 @@ router.get('/', function(req, res, next){
 router.get('/flat', ensureAuthenticated, function(req, res, next){
     var flatFeed = FeedManager.getNewsFeeds(req.user.id)['flat'];
 
-    flatFeed.get({}, function(err, response, body){
-        if (err) return next(err);
-
-        var activities = body.results;
-        StreamBackend.enrichActivities(activities,
-          function(err, enrichedActivities){
-            return res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
-          }
-        );
-        
-    });
+    flatFeed.get({})
+        .then(enrichActivities)
+        .then(function (enrichedActivities) {
+            res.render('feed', {location: 'feed', user: req.user, activities: enrichedActivities, path: req.url});
+        })
+        .catch(next);
 });
 
 /******************
@@ -148,39 +153,35 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
 router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
     var aggregatedFeed = FeedManager.getNewsFeeds(req.user.id)['aggregated'];
 
-    aggregatedFeed.get({}, function(err, response, body){
-        if (err) return next(err);
-
-        var activities = body.results;
-        StreamBackend.enrichAggregatedActivities(activities, function(err, enrichedActivities){
-            return res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: enrichedActivities, path: req.url});
-        });
-    });
+    aggregatedFeed.get({})
+        .then(enrichAggregatedActivities)
+        .then(function(enrichedActivities) {
+            res.render('aggregated_feed', {location: 'aggregated_feed', user: req.user, activities: enrichedActivities, path: req.url});
+        })
+        .catch(next);
 });
 
 /******************
   Notification Feed
 ******************/
 
-router.get('/notification_feed/', ensureAuthenticated, function(req, res){
+router.get('/notification_feed/', ensureAuthenticated, function(req, res, next){
     var notificationFeed = FeedManager.getNotificationFeed(req.user.id);
 
-    notificationFeed.get({mark_read:true, mark_seen: true}, function(err, response, body){
-        if (err) return next(err);
-
-        activities = body.results;
-        if (activities.length == 0) {
-            return res.send('');
-        } else {
-            req.user.unseen = 0;
-
-            StreamBackend.enrichActivities(activities[0].activities,
-              function(err, enrichedActivities){
-                return res.render('notification_follow', {lastFollower: enrichedActivities[0], count: enrichedActivities.length, layout: false});
-              }
-            );
-        }
-    });
+    notificationFeed.get({mark_read:true, mark_seen: true})
+        .then(function(body) {
+            var activities = body.results;
+            if (activities.length == 0) {
+                return res.send('');
+            } else {
+                req.user.unseen = 0;
+                return StreamBackend.enrichActivities(activities[0].activities);
+            }
+        })
+        .then(function (enrichedActivities) {
+            res.render('notification_follow', {lastFollower: enrichedActivities[0], count: enrichedActivities.length, layout: false});
+        })
+        .catch(next);
 });
 
 /******************
@@ -204,18 +205,15 @@ router.get('/people', ensureAuthenticated, function(req, res){
 router.get('/profile', ensureAuthenticated, function(req, res, next){
     var userFeed = FeedManager.getUserFeed(req.user.id);
 
-    userFeed.get({}, function(err, response, body){
-        if (err) return next(err);
-        var activities = body.results;
-        StreamBackend.enrichActivities(activities,
-          function(err, enrichedActivities){
-            return res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: enrichedActivities, path: req.url, show_feed: true});
-          }
-        );
-    });
+    userFeed.get({})
+        .then(enrichActivities)
+        .then(function (enrichedActivities) {
+            res.render('profile', {location: 'profile', user: req.user, profile_user: req.user, activities: enrichedActivities, path: req.url, show_feed: true});
+        })
+        .catch(next);
 });
 
-router.get('/profile/:user', ensureAuthenticated, function(req, res){
+router.get('/profile/:user', ensureAuthenticated, function(req, res, next){
     User.findOne({username: req.params.user}, function(err, foundUser){
         if (err) return next(err);
 
@@ -223,19 +221,17 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res){
 
         var flatFeed = FeedManager.getNewsFeeds(foundUser._id)['flat'];
 
-        flatFeed.get({}, function(err, response, body){
-            if (err) return next(err);
+        flatFeed.get({})
+            .then(function (body) {
+                var activities = body.activities;
+                StreamBackend.serializeActivities(activities);
 
-            var activities = response.body.results;
-            StreamBackend.serializeActivities(activities);
-
-            StreamBackend.enrichActivities(activities,
-              function(err, enrichedActivities){
-                return res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: enrichedActivities, path: req.url, show_feed: true});
-              }
-            );
-            
-        });
+                return StreamBackend.enrichActivities(activities);
+            })
+            .then(function (enrichedActivities) {
+                res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: enrichedActivities, path: req.url, show_feed: true});
+            })
+            .catch(next);
     });
 });
 

@@ -12,7 +12,7 @@
     </figure>
     <form class="pin-bottom create-destroy" method="POST" action="/pin">
         <div class="media">
-        <%if (activity.object.item.pinned) {%>
+        <%if (! activity.object.item.pinned) {%>
             <div class="pull-left">
                 <input class="btn btn-danger btn-sm" type="submit" value="Unpin" data-toggle="Pin">
             </div>
