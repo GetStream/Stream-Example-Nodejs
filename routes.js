@@ -223,12 +223,7 @@ router.get('/profile/:user', ensureAuthenticated, function(req, res, next){
         var flatFeed = FeedManager.getNewsFeeds(foundUser._id)['flat'];
 
         flatFeed.get({})
-            .then(function (body) {
-                var activities = body.activities;
-                StreamBackend.serializeActivities(activities);
-
-                return StreamBackend.enrichActivities(activities);
-            })
+            .then(enrichActivities)
             .then(function (enrichedActivities) {
                 res.render('profile', {location: 'profile', user: req.user, profile_user: foundUser, activities: enrichedActivities, path: req.url, show_feed: true});
             })
