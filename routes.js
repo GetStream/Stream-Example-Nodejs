@@ -137,7 +137,7 @@ router.get('/', function(req, res, next){
 ******************/
 
 router.get('/flat', ensureAuthenticated, function(req, res, next){
-    var flatFeed = FeedManager.getNewsFeeds(req.user.id)['flat'];
+    var flatFeed = FeedManager.getNewsFeeds(req.user.id)['timeline'];
 
     flatFeed.get({})
         .then(enrichActivities)
@@ -152,7 +152,7 @@ router.get('/flat', ensureAuthenticated, function(req, res, next){
 ******************/
 
 router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next){
-    var aggregatedFeed = FeedManager.getNewsFeeds(req.user.id)['aggregated'];
+    var aggregatedFeed = FeedManager.getNewsFeeds(req.user.id)['timeline_aggregated'];
 
     aggregatedFeed.get({})
         .then(enrichAggregatedActivities)

@@ -3,19 +3,19 @@ exports.config = {
   /**
   * GetStream.io API key
   */
-  apiKey: "",
+  apiKey: "jwnh7f6nnydm",
   
 
   /**
   * GetStream.io API Secret
   */
-  apiSecret: "",
+  apiSecret: "gxtnydgmv98nnvkvwncfd92365wkhngac5r74hzfjgsrmvxk4bcta8thax25ak25",
   
 
   /**
   * GetStream.io API App ID
   */
-  apiAppId: "",
+  apiAppId: "12109",
   
 
   /**
@@ -41,12 +41,12 @@ exports.config = {
     /**
     * GetStream.io Flat Feed slug
     */
-    flat: "flat",
+    flat: "timeline",
     
     /**
     * GetStream.io Aggregated Feed slug
     */
-    aggregated: "aggregated"
+    aggregated: "timeline_aggregated"
   }
 
   
