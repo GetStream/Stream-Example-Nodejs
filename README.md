@@ -20,7 +20,7 @@ You'll need a mongodb instance running in the background. Or set up the URI to a
 ### Using GitHub to Sign/Log in
 Initially, the app starts with the authentication user mocked, if you want to sign in and out using your GitHub account, you'll need to set up a GitHub app and modify **config/config.js** to use your app's client credentials.
 
-You will also need to commment out in **app.js**, the middleware that mocks the authentication process like so:
+You will also need to comment out in **app.js**, the middleware that mocks the authentication process like so:
 
 	// app.use(passport_mock.initialize());
 	app.use(passport.initialize());
