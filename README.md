@@ -11,6 +11,7 @@ This example Node.js app shows you how you can use [GetStream.io](https://getstr
 You'll need a mongodb instance running in the background.
 
 Example using [Homebrew](https://brew.sh/) on MacOS
+
 	brew install mongodb
 	mkdir data
 	mongod --dbpath=./data
