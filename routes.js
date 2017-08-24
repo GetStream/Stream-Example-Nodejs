@@ -110,7 +110,7 @@ router.use(function(req, res, next) {
     Support DELETE from forms
 *******************************/
 
-router.use(bodyParser.urlencoded({ extended: false }));
+router.use(bodyParser.urlencoded({ extended: true }));
 router.use(
 	methodOverride(function(req, res) {
 		if (req.body && typeof req.body === 'object' && '_method' in req.body) {
