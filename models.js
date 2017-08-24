@@ -4,6 +4,8 @@ var mongoose = require('mongoose'),
 	Schema = mongoose.Schema,
 	stream_node = require('getstream-node');
 
+mongoose.Promise = global.Promise;
+
 var connection = mongoose.connect(config.get('MONGOLAB_URI'), {
 	useMongoClient: true,
 });
