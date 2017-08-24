@@ -30,7 +30,7 @@ The app needs some initial data in order to function correctly. Run this script 
 ### Using GitHub to Sign/Log in
 Initially, the app starts with the authentication user mocked, if you want to sign in and out using your GitHub account, you'll need to set up a GitHub app and modify **config/config.js** to use your app's client credentials.
 
-You will also need to commment out in **app.js**, the middleware that mocks the authentication process like so:
+You will also need to comment out in **app.js**, the middleware that mocks the authentication process like so:
 
 	// app.use(passport_mock.initialize());
 	app.use(passport.initialize());
