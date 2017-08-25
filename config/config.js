@@ -3,7 +3,7 @@ var nconf = require('nconf');
 nconf.argv().env();
 
 nconf.defaults({
-	MONGOLAB_URI: 'mongodb://localhost/stream_nodejs',
+	MONGODB_URI: 'mongodb://localhost/stream_nodejs',
 	PORT: 8000,
 	GITHUB_CLIENT_ID: 'REPLACE_W_GITHUB_CLIENT_ID',
 	GITHUB_CLIENT_SECRET: 'REPLACE_W_GITHUB_CLIENT_SECRET',

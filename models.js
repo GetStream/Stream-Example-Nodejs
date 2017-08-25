@@ -6,7 +6,7 @@ var mongoose = require('mongoose'),
 
 mongoose.Promise = global.Promise;
 
-var connection = mongoose.connect(config.get('MONGOLAB_URI'), {
+var connection = mongoose.connect(config.get('MONGODB_URI'), {
 	useMongoClient: true,
 });
 
