@@ -20,7 +20,7 @@ var userSchema = new Schema(
 	},
 	{
 		collection: 'User',
-	},
+	}
 );
 
 var User = mongoose.model('User', userSchema);
@@ -33,7 +33,7 @@ var itemSchema = new Schema(
 	},
 	{
 		collection: 'Item',
-	},
+	}
 );
 var Item = mongoose.model('Item', itemSchema);
 
@@ -44,7 +44,7 @@ var pinSchema = new Schema(
 	},
 	{
 		collection: 'Pin',
-	},
+	}
 );
 
 pinSchema.plugin(StreamMongoose.activity);
@@ -66,7 +66,7 @@ var followSchema = new Schema(
 	},
 	{
 		collection: 'Follow',
-	},
+	}
 );
 
 followSchema.plugin(StreamMongoose.activity);
