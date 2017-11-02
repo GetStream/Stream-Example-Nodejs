@@ -63,8 +63,8 @@ router.use(function(req, res, next) {
 		res.locals = {
 			StreamConfigs: stream_node.settings,
 			NotificationFeed: FeedManager.getNotificationFeed(
-				req.user.id || req.user.github_id,
-			),
+				req.user.id || req.user.github_id
+			)
 		};
 	}
 	next();
@@ -119,7 +119,7 @@ router.use(
 			delete req.body._method;
 			return method;
 		}
-	}),
+	})
 );
 
 router.get('/', function(req, res, next) {
@@ -197,7 +197,7 @@ router.get('/aggregated_feed', ensureAuthenticated, function(req, res, next) {
 router.get('/notification_feed/', ensureAuthenticated, function(
 	req,
 	res,
-	next,
+	next
 ) {
 	var notificationFeed = FeedManager.getNotificationFeed(req.user.id);
 
@@ -331,11 +331,11 @@ router.get(
 						if (err) return next(err);
 
 						return res.redirect('/');
-					},
+					}
 				);
 			} else return res.redirect('/');
 		});
-	},
+	}
 );
 
 /******************
@@ -361,7 +361,7 @@ router.post('/follow', ensureAuthenticated, function(req, res, next) {
 router.delete('/follow', ensureAuthenticated, function(req, res) {
 	Follow.findOne({ user: req.user.id, target: req.body.target }, function(
 		err,
-		follow,
+		follow
 	) {
 		if (follow) {
 			follow.remove(function(err) {
