@@ -20,7 +20,7 @@
 		"express-session": "^1.15.5",
 		"getstream-node": "1.5.0",
 		"method-override": "^2.3.9",
-		"mongoose": "^4.11.8",
+		"mongoose": "^9.8.1",
 		"moment": "^2.18.1",
 		"nconf": "^0.8.4",
 		"nodemon": "^1.11.0",
