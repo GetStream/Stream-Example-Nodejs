@@ -1,3 +1,5 @@
+> **This repository is archived and no longer maintained.** For a current alternative, see [the Feeds v3 Node docs](https://getstream.io/activity-feeds/docs/node/).
+
 ## Stream Example App
 
 This example Node.js app shows you how you can use [GetStream.io](https://getstream.io/ "GetStream.io") to built a site similar to Pinterest.
